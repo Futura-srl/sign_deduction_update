@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>   
+    <record id="anomaly_form_inherit_update" model="ir.ui.view">
+        <field name="name">anomaly.form.inherit.update</field>
+        <field name="model">fleet.vehicle.log.services</field>
+        <field name="inherit_id" ref="fleet.anomaly_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='action_view_documents_sign']" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button class="oe_stat_button" type="object" name="create_document_request_sign"
+                            icon="fa-pencil-square-o">
+                        <field string="Send notify" name="sign_progress"/>
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    
+</odoo>
