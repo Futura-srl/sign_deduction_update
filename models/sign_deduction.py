@@ -26,7 +26,7 @@ class FleetVehicleLogServices(models.Model):
         # action['domain'] = [('id', 'in', self.sign_request_ids.ids)]
         # return action
         return {
-            'name': 'Rifornimenti del veicolo',
+            'name': 'Documenti con firma richiesta',
             'type': 'ir.actions.act_window',
             'res_model': 'sign.request',
             'view_mode': 'kanban,tree,form',
@@ -35,7 +35,10 @@ class FleetVehicleLogServices(models.Model):
         }
 
     def create_pdf_for_sign(self):
-        doc_base64 = self.env['ir.attachment'].browse(159792)
+        if self.deduction_point == 0:
+            doc_base64 = self.env['ir.attachment'].browse(159835) # Template da 1 pagina
+        else:
+            doc_base64 = self.env['ir.attachment'].browse(159792) # Template da 2 pagine
         doc_base64_content = doc_base64.datas.decode('utf-8')
         decoded_bytes = base64.b64decode(doc_base64_content)
     
@@ -44,12 +47,25 @@ class FleetVehicleLogServices(models.Model):
             temp_file_path = temp_file.name
     
         doc = Document(temp_file_path)
-        importo_stringa = self.amount
-        importo_float = float(importo_stringa)
-        importo_formattato = "{:.2f}".format(importo_float).replace(".", ",")
+        deduction_ids = self.deduction_ids.ids
+        total_import = 0.0
+        # Stampare gli ID singolarmente
+        for deduction_id in deduction_ids:
+            _logger.info("Stampo singolo record")
+            _logger.info(str(deduction_id))
+            _logger.info(self.env['deduction.deduction'].search([('id', '=', deduction_id), ('date', '!=', False)]).deduction_value)
+            total_import += self.env['deduction.deduction'].search([('id', '=', deduction_id), ('date', '!=', False)]).deduction_value
+        _logger.info("importo totale %s", total_import)
+        importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
+        _logger.info("STAMPO I VALORI")
+        
+        if self.company_id.name == "Logistica S.R.L.":
+            azienda = "Futura Logistica S.r.l."
+        else:
+            azienda = self.company_id.name
         replacements = {
             "[NOME]": self.purchaser_id.name,
-            "[AZIENDA]": self.company_id.name,
+            "[AZIENDA]": azienda,
             "[DATA]": date_today.strftime('%d/%m/%Y'),
             "[DATA_EVENTO]": str(self.date.date().strftime('%d/%m/%Y')),
             "[LUOGO]": self.city_id.name,
@@ -109,19 +125,77 @@ class FleetVehicleLogServices(models.Model):
 
     def add_template_for_sign(self):
         attachment_id = self.upload_attachment()
-        template = self.env['sign.template'].create({
+        template_values = {
             'attachment_id': attachment_id,
-            'sign_item_ids': [(0, 0, {
-                'type_id': 1,
-                'required': True,
-                'responsible_id': 3,
-                'page': 1,
-                'posX': 0.517,
-                'posY': 0.737,
-                'width': 0.2,
-                'height': 0.05,
-            })],
-        })
+            'sign_item_ids': [
+                (0, 0, {
+                    'type_id': 11,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 1,
+                    'posX': 0.523,
+                    'posY': 0.695,
+                    'width': 0.108,
+                    'height': 0.015,
+                }),
+                (0, 0, {
+                    'type_id': 7,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 1,
+                    'posX': 0.691,
+                    'posY': 0.697,
+                    'width': 0.150,
+                    'height': 0.015,
+                }),
+                (0, 0, {
+                    'type_id': 1,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 1,
+                    'posX': 0.503,
+                    'posY': 0.723,
+                    'width': 0.307,
+                    'height': 0.052,
+                }),
+            ],
+        }
+        
+        if self.deduction_point != 0:
+            template_values['sign_item_ids'].extend([
+                (0, 0, {
+                    'type_id': 11,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 2,
+                    'posX': 0.524,
+                    'posY': 0.524,
+                    'width': 0.103,
+                    'height': 0.014,
+                }),
+                (0, 0, {
+                    'type_id': 7,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 2,
+                    'posX': 0.685,
+                    'posY': 0.524,
+                    'width': 0.103,
+                    'height': 0.015,
+                }),
+                (0, 0, {
+                    'type_id': 1,
+                    'required': True,
+                    'responsible_id': 3,
+                    'page': 2,
+                    'posX': 0.498,
+                    'posY': 0.541,
+                    'width': 0.330,
+                    'height': 0.049,
+                }),
+            ])
+        
+        template = self.env['sign.template'].create(template_values)
         _logger.info(template.id)
         return template.id
 

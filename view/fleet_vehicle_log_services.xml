@@ -5,10 +5,10 @@
         <field name="model">fleet.vehicle.log.services</field>
         <field name="inherit_id" ref="fleet_deduction_sign.anomaly_form_inherit"/>
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='action_view_documents_sign']" position="before">
+            <xpath expr="//header" position="inside">
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-pencil-square-o">
-                    <span>Send notify</span>
+                        icon="fa-paper-plane" attrs="{'invisible': [('sign_progress', '!=', '0/0')]}">
+                    <span>Invia detrazione</span>
                 </button>
             </xpath>
         </field>
