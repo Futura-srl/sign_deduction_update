@@ -36,9 +36,9 @@ class FleetVehicleLogServices(models.Model):
 
     def create_pdf_for_sign(self):
         if self.deduction_point == 0:
-            doc_base64 = self.env['ir.attachment'].browse(159835) # Template da 1 pagina
+            doc_base64 = self.env['ir.attachment'].browse(163362) # Template da 1 pagina
         else:
-            doc_base64 = self.env['ir.attachment'].browse(159792) # Template da 2 pagine
+            doc_base64 = self.env['ir.attachment'].browse(163364) # Template da 2 pagine
         doc_base64_content = doc_base64.datas.decode('utf-8')
         decoded_bytes = base64.b64decode(doc_base64_content)
     
