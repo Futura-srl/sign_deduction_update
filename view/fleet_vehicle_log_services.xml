@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" attrs="{'invisible': [('sign_progress', '!=', '0/0')]}">
+                        icon="fa-paper-plane" attrs="{'invisible': ['|',('sign_progress', '!=', '0/0'),('category_service_type.id', '!=', '8'), ('category_service_type.id', '!=', '9')]}">
                     <span>Invia detrazione</span>
                 </button>
             </xpath>

@@ -12,6 +12,7 @@ import os
 from pydocx import PyDocX
 from docx.shared import Pt
 from shutil import copyfileobj
+from odoo import api, fields, models, http, _, Command
 
 _logger = logging.getLogger(__name__)
 date_today = date.today()
@@ -204,7 +205,7 @@ class FleetVehicleLogServices(models.Model):
         template_id = self.add_template_for_sign()
         _logger.info(template_id)
         reference_name = str(self.id) + " " + str(self.service_type_id.name) + " " + str(self.description)
-        self.env['sign.request'].create({
+        sign_request = self.env['sign.request'].with_context(no_sign_mail=True).create({
             'anomaly_id': self.id,
             'reference': reference_name,
             'request_item_ids': [(0, 0, {
@@ -213,5 +214,14 @@ class FleetVehicleLogServices(models.Model):
         })],
             'template_id': template_id,
         })
-        sign_template = self.env['sign.template'].browse(template_id)  # Recupera il record con ID 13
+        _logger.info("Stampo il sign_request")
+        _logger.info(sign_request.id)
+        request_item_id = self.env['sign.request'].search_read([('id', '=', sign_request.id)],['request_item_ids'])[0]['request_item_ids'][0]
+        _logger.info(request_item_id)
+        _logger.info(self.env['sign.request.item'].search_read([('id', '=', request_item_id)]))
+        record = self.env['sign.request.item'].browse(request_item_id)
+        _logger.info(record)
+        record.write({'signer_email': 'lcocozza93@icloud.com'})
+        record.send_signature_accesses()
+        sign_template = self.env['sign.template'].browse(template_id)
         sign_template.write({'active': False})
