@@ -13,6 +13,8 @@ from pydocx import PyDocX
 from docx.shared import Pt
 from shutil import copyfileobj
 from odoo import api, fields, models, http, _, Command
+from odoo.exceptions import UserError, ValidationError
+
 
 _logger = logging.getLogger(__name__)
 date_today = date.today()
@@ -59,6 +61,12 @@ class FleetVehicleLogServices(models.Model):
         _logger.info("importo totale %s", total_import)
         importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
         _logger.info("STAMPO I VALORI")
+
+        
+        if self.purchaser_id.name == False:
+            raise ValidationError(_("Non è stato inserito alcun autista."))
+        if self.city_id.name == False:
+            raise ValidationError(_("Non è stata selezionata alcuna città."))
         
         if self.company_id.name == "Logistica S.R.L.":
             azienda = "Futura Logistica S.r.l."
@@ -221,7 +229,11 @@ class FleetVehicleLogServices(models.Model):
         _logger.info(self.env['sign.request.item'].search_read([('id', '=', request_item_id)]))
         record = self.env['sign.request.item'].browse(request_item_id)
         _logger.info(record)
-        record.write({'signer_email': 'lcocozza93@icloud.com'})
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+        _logger.info(email)
+        if email == False:
+            raise ValidationError(_("Il res.partner non ha una mail personale inserita."))
+        record.write({'signer_email': email})
         record.send_signature_accesses()
         sign_template = self.env['sign.template'].browse(template_id)
         sign_template.write({'active': False})
