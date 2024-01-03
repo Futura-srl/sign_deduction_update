@@ -1,19 +1,36 @@
-<?xml version="1.0" encoding="utf-8"?>
+git <?xml version="1.0" encoding="utf-8"?>
 <odoo>   
     <record id="anomaly_form_inherit_update" model="ir.ui.view">
         <field name="name">anomaly.form.inherit.update</field>
         <field name="model">fleet.vehicle.log.services</field>
         <field name="inherit_id" ref="fleet_deduction_sign.anomaly_form_inherit"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="before">
+                <field name="groups_ids" invisible="1"/>
+                <field name="is_admin" invisible="1"/>
+                <field name="state" invisible="1"/>
+            </xpath>
             <xpath expr="//header" position="inside">
-                <button class="oe_stat_button" type="object" name="create_document_request_sign"
+                <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
                         icon="fa-paper-plane" attrs="{'invisible': [('sign_progress', '!=', '0/0')]}">
                     <span>Invia detrazione</span>
-                </button>
-                <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" attrs="{'invisible': ['|',('sign_progress', '!=', '0/0'),('category_service_type.id', '!=', '8'), ('category_service_type.id', '!=', '9')]}">
-                    <span>Invia detrazione</span>
                 </button> -->
+                <button class="oe_stat_button" type="object" name="create_document_request_sign"
+                        icon="fa-paper-plane" attrs="{'invisible': ['|', '|', '|', ('is_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', '!=', 8)]}">
+                    <span>Invia detrazione</span>
+                </button>
+                <button class="oe_stat_button btn-danger" type="object" name="cancelled"
+                        icon="fa-trash" attrs="{'invisible': [('state', '=', 'cancelled')]}">
+                    <span>ANNULLA</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="send_attachment_with_email"
+                        icon="fa-paper-plane">
+                    <span>Invia allegato</span>
+                </button>
+            </xpath>
+            <xpath expr="//header/field[@name='state']" position="replace">
+                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [8])]}" statusbar_visible="new,reported,done,cancelled"/>
+                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [5,7,9])]}" statusbar_visible="new,reported,running,done,cancelled"/>
             </xpath>
         </field>
     </record>

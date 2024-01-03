@@ -22,7 +22,22 @@ date_today = date.today()
 class FleetVehicleLogServices(models.Model):
     _inherit = 'fleet.vehicle.log.services'
 
-    
+    state = fields.Selection([('new', 'Inserito'), ('reported', 'Segnalato'), ('running', 'Processato'), ('done', 'Completato'), ('cancelled', 'Annullato')], readonly=True, track_visibility='onchange')
+    groups_ids = fields.Char(string='Groups of the User', compute='_compute_groups_admin', store=False)
+    is_admin = fields.Boolean(compute='_compute_groups_admin', store=False)
+
+
+    @api.depends('is_admin')
+    def _compute_groups_admin(self):
+        for record in self:
+            # Trova l'utente connesso
+            user = self.env.user
+            # Ottieni gli identificatori dei gruppi dell'utente connesso
+            if 4 in user.groups_id.ids:
+                record.is_admin = True
+            else:
+                record.is_admin = False
+            
     
     def action_view_documents_sign(self):
         # action = self.env.ref('sign.sign_request_action').read()[0]
@@ -63,10 +78,7 @@ class FleetVehicleLogServices(models.Model):
         _logger.info("STAMPO I VALORI")
 
         
-        if self.purchaser_id.name == False:
-            raise ValidationError(_("Non è stato inserito alcun autista."))
-        if self.city_id.name == False:
-            raise ValidationError(_("Non è stata selezionata alcuna città."))
+        
         
         if self.company_id.name == "Logistica S.R.L.":
             azienda = "Futura Logistica S.r.l."
@@ -208,8 +220,87 @@ class FleetVehicleLogServices(models.Model):
         _logger.info(template.id)
         return template.id
 
+    def send_attachment_with_email(self, attachment_id):
+        # Controllo se è interinale
+        is_interinal = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), ('active', '=', True)])
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+        _logger.info(f"La mail va inviata a {email}")
+
+        deduction_ids = self.deduction_ids.ids
+        total_import = 0.0
+        for deduction_id in deduction_ids:
+            total_import += self.env['deduction.deduction'].search([('id', '=', deduction_id), ('date', '!=', False)]).deduction_value
+        _logger.info("importo totale %s", total_import)
+        importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
+        if self.deduction_point > 0:
+            body_interinale = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore (data Evento) si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
+<p><b>Qualora la contravvenzione comporti la decurtazione di Punti vi chiediamo entro 5 giorni di rispondere allegando alla presente:</b>
+<ul>
+    <li>Copia fronte e retro della patente sulla stessa facciata con scritto di proprio pugno dall’autista la seguente frase 'Io sottoscritto {self.purchaser_id.name} nato a (paese e provincia di nascita) residente a (paese e provincia di residenza) in via (via) dichiaro che la copia del presente documento (indicare tipo documento) n° (numero documento) è conforme all'originale in mio possesso. (data e firma leggibile)'.</li>
+    <li>Modulo comunicazione dati conducente allegata al presente verbale correttamente compilato e firmato.</li>
+</ul></p>
+<p><b>Vi chiedo di procedere al rilascio della vostra contestazione ed operare la relativa trattenuta dell’importo {importo_formattato}</b> in base a quanto vi verrà quantificato nel Timesheet come di consueto, da sommarsi qualora la contravvenzione preveda la decurtazione di punti e la risorsa non intenda comunicare i propri dati ulteriori 220,00€ a fronte della sanzione che riceveremo per la mancata comunicazione dei dati del conducente all’ente accertatore.</p>
+<p>Vi informiamo che è stata inoltrata la contestazione dell’evento da firmare per presa visione alla risorsa all’indirizzo (indirizzo mail dipendente).</p>
+<p>Per eventuali contestazioni vi chiediamo di rispondere sempre a questa mail.</p>
+</br></br>
+<p>Futura</p>"""
+
+            body_employee = f'''<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
+<p><b>Qualora la contravvenzione comporti la decurtazione di Punti vi chiediamo entro 5 giorni di rispondere allegando alla presente:</b>
+<ul>
+    <li>Copia fronte e retro della patente sulla stessa facciata con scritto di proprio pugno dall’autista la seguente frase 'Io sottoscritto {self.purchaser_id.name} nato a (paese e provincia di nascita) residente a (paese e provincia di residenza) in via (via) dichiaro che la copia del presente documento (indicare tipo documento) n° (numero documento) è conforme all'originale in mio possesso. (data e firma leggibile)'.</li>
+    <li>Modulo comunicazione dati conducente allegata al presente verbale correttamente compilato e firmato.</li>
+</ul></p>
+<p>Al presente verbale saranno da sommarsi qualora la contravvenzione preveda la decurtazione di punti e Lei non intenda comunicare i propri dati ulteriori 220,00€ a fronte della sanzione che riceveremo per la mancata comunicazione dei dati del conducente all’ente accertatore.</p>
+<p>Riceverà ulteriore mail con un link che riporterà alla contestazione da firmare per presa visione, tale firma non esclude l’eventuale addebito</p>
+<p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
+</br></br>
+<p>Futura</p>'''
+        else:
+            body_employee = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
+<p>Riceverà ulteriore mail con un link che riporterà alla contestazione da firmare per presa visione, tale firma non esclude l’eventuale addebito</p>
+<p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
+</br>
+<p>Futura</p>"""
+            body_interinale = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
+<p><b>Vi chiedo di procedere al rilascio della vostra contestazione ed operare la relativa trattenuta dell’importo {importo_formattato}</b> in base a quanto vi verrà quantificato nel Timesheet come di consueto.</p>
+<p>Vi informiamo che è stata inoltrata la contestazione dell’evento da firmare per presa visione alla risorsa all’indirizzo (indirizzo mail dipendente).</p>
+<p>Per eventuali contestazioni vi chiediamo di rispondere sempre a questa mail.</p>
+</br>
+<p>Futura</p>"""
+        # Invia l'email con l'allegato al dipendente
+        mail_values = {
+            'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+            'email_from': 'noreply@futurasl.com',
+            'email_to': email,
+            'email_cc': 'catchall@futurasl-stage.odoo.com',
+            'model': 'fleet.vehicle.log.services',
+            'res_id': self.id,
+            'body_html': body_employee,
+            'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
+        }
+
+        mail = self.env['mail.mail'].sudo().create(mail_values)
+        mail.send()
+
+        # Invia l'email con l'allegato all'interinale
+        mail_values = {
+            'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+            'email_from': 'noreply@futurasl.com',
+            'email_to': email,
+            'email_cc': 'catchall@futurasl-stage.odoo.com',
+            'model': 'fleet.vehicle.log.services',
+            'res_id': self.id,
+            'body_html': body_interinale,
+            'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
+        }
+
+        mail = self.env['mail.mail'].sudo().create(mail_values)
+        mail.send()
+
     
     def create_document_request_sign(self):
+        self.check_data()
         template_id = self.add_template_for_sign()
         _logger.info(template_id)
         reference_name = str(self.id) + " " + str(self.service_type_id.name) + " " + str(self.description)
@@ -231,9 +322,32 @@ class FleetVehicleLogServices(models.Model):
         _logger.info(record)
         email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
         _logger.info(email)
-        if email == False:
-            raise ValidationError(_("Il res.partner non ha una mail personale inserita."))
+
         record.write({'signer_email': email})
         record.send_signature_accesses()
         sign_template = self.env['sign.template'].browse(template_id)
         sign_template.write({'active': False})
+        self.state = 'reported'
+        attachment_id = self.env['documents.document'].search_read([('tag_ids', '=', 29),('service_id.id', '=', self.id)], ['attachment_id'])[0]['attachment_id'][0]
+        self.send_attachment_with_email(attachment_id)
+        
+
+
+    def cancelled(self):
+        self.state = 'cancelled'
+
+    def check_data(self):
+        is_attachment = self.env['documents.document'].search_read([('tag_ids', '=', 29),('service_id.id', '=', self.id)], ['attachment_id'])
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+
+        if is_attachment == []:
+            raise ValidationError(_("Non c'è alcun verbale allegato."))
+        if self.purchaser_id.name == False:
+            raise ValidationError(_("Non è stato inserito alcun autista."))
+        if self.city_id.name == False:
+            raise ValidationError(_("Non è stata selezionata alcuna città."))
+        if email == False:
+            raise ValidationError(_("Il res.partner non ha una mail personale inserita."))
+
+
+
