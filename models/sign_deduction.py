@@ -223,7 +223,7 @@ class FleetVehicleLogServices(models.Model):
     def send_attachment_with_email(self, attachment_id):
         # Controllo se è interinale
         is_interinal = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), ('active', '=', True)])
-        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0]['email_personale']
         _logger.info(f"La mail va inviata a {email}")
 
         deduction_ids = self.deduction_ids.ids
@@ -282,6 +282,8 @@ class FleetVehicleLogServices(models.Model):
 
         mail = self.env['mail.mail'].sudo().create(mail_values)
         mail.send()
+        partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
+        self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'message_type': 'comment','body': "<p>Ho appena inviato le seguenti email:</p><p>Comunicazione da far firmare al dipendente</p><p>Copia del verbale al dipendente</p>"})
 
         # Invia l'email con l'allegato all'interinale
         mail_values = {
@@ -297,7 +299,8 @@ class FleetVehicleLogServices(models.Model):
 
         mail = self.env['mail.mail'].sudo().create(mail_values)
         mail.send()
-
+        partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
+        self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato le seguenti email:</p><p>Comunicazione da far firmare al dipendente</p><p>Copia del verbale al dipendente e all'interinale</p>"})
     
     def create_document_request_sign(self):
         self.check_data()
@@ -320,7 +323,7 @@ class FleetVehicleLogServices(models.Model):
         _logger.info(self.env['sign.request.item'].search_read([('id', '=', request_item_id)]))
         record = self.env['sign.request.item'].browse(request_item_id)
         _logger.info(record)
-        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0]['email_personale']
         _logger.info(email)
 
         record.write({'signer_email': email})
@@ -338,7 +341,7 @@ class FleetVehicleLogServices(models.Model):
 
     def check_data(self):
         is_attachment = self.env['documents.document'].search_read([('tag_ids', '=', 29),('service_id.id', '=', self.id)], ['attachment_id'])
-        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personal'])[0]['email_personal']
+        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0]['email_personale']
 
         if is_attachment == []:
             raise ValidationError(_("Non c'è alcun verbale allegato."))
