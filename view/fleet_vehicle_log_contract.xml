@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <record id="fleet_vehicle_log_contract_view_form_inherit_3" model="ir.ui.view">
+        <field name="name">fleet.vehicle.log.services.form.inherit.2</field>
+        <field name="model">fleet.vehicle.log.contract</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_log_contract_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='insurer_id']" position="after">
+                <field name="locator_location"/>
+            </xpath>
+        </field>
+    </record>
+    
+</odoo>

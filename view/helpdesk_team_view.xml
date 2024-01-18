@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>   
+    <record id="helpdesk_team_view_form_inherit" model="ir.ui.view">
+        <field name="name">helpdesk.team.view.form.inherit</field>
+        <field name="model">helpdesk.team</field>
+        <field name="inherit_id" ref="helpdesk.helpdesk_team_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="after">
+                <label for="organization_id"/>
+                <field name="organization_id" string="Centro di costo" options="{'create': false, 'create_edit': false}"/>
+            </xpath>
+        </field>
+    </record>
+    
+    
+    
+</odoo>

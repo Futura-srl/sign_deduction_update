@@ -8,7 +8,15 @@
             <xpath expr="//header" position="before">
                 <field name="groups_ids" invisible="1"/>
                 <field name="is_admin" invisible="1"/>
+                <field name="is_fleet_admin" invisible="1"/>
                 <field name="state" invisible="1"/>
+            </xpath>
+            <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='close_anomaly']" position="replace">
+                <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
+                        attrs="{'invisible': ['|', '|', ('is_fleet_admin', '=', False), ('state', 'not in', ['new', 'reported', 'running']), ('category_service_type', '!=', 'anomaly')]}"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
@@ -16,21 +24,59 @@
                     <span>Invia detrazione</span>
                 </button> -->
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" attrs="{'invisible': ['|', '|', '|', ('is_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', '!=', 8)]}">
+                        icon="fa-paper-plane" attrs="{'invisible': ['|', '|', '|', ('is_fleet_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', 'not in', [8])]}">
                     <span>Invia detrazione</span>
                 </button>
                 <button class="oe_stat_button btn-danger" type="object" name="cancelled"
                         icon="fa-trash" attrs="{'invisible': [('state', '=', 'cancelled')]}">
                     <span>ANNULLA</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="send_attachment_with_email"
-                        icon="fa-paper-plane">
-                    <span>Invia allegato</span>
+                <button class="oe_stat_button" type="object" name="to_processed" attrs="{'invisible': ['|', ('state', 'not in', ['reported']),('service_type_id', '!=', 9)]}">
+                    <span>Processa</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="report_anomaly" attrs="{'invisible': ['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]}">
+                    <span>Segnala sinistro</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="test_action">
+                    <span>TEST AZIONE</span>
                 </button>
             </xpath>
+            
+            
             <xpath expr="//header/field[@name='state']" position="replace">
+                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'in', [7,8,9])]}" statusbar_visible="new,running,done,cancelled"/>
                 <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [8])]}" statusbar_visible="new,reported,done,cancelled"/>
-                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [5,7,9])]}" statusbar_visible="new,reported,running,done,cancelled"/>
+                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [7,9])]}" statusbar_visible="new,reported,running,done,cancelled"/>
+            </xpath>
+            <xpath expr="//field[@name='deduction_ids']" position="replace">
+                <field name="deduction_ids" context="{'default_fleet_vehicle_log_service_id': id}" nolabel="1">
+                    <tree editable="bottom">
+                        <field name="date" widget="date"/>
+                        <field name="employee_id" optional="show"/>
+                        <field name="deduction_value" sum="Total of deductions" optional="show"/>
+                        <field name="competence_contact_id" optional="show"/> <!-- Forse mostrare solo per le multe-->
+                        <field name="note" optional="show"/> <!-- Forse mostrare solo per le multe-->
+                        <field name="processed" optional="show"/> <!-- Forse mostrare solo per le multe-->
+                    </tree>
+                </field>
+            </xpath>
+        </field>
+    </record>
+    
+    <record id="fleet_vehicle_log_services_form_inherit_2" model="ir.ui.view">
+        <field name="name">fleet.vehicle.log.services.form.inherit.2</field>
+        <field name="model">fleet.vehicle.log.services</field>
+        <field name="inherit_id" ref="fleet_service_with_deduction.fleet_vehicle_log_services_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='close_anomaly']" position="replace">
+                <button name="close_anomaly" string="Set as completed" type="object" class="btn-secondary"
+                        attrs="{'invisible': [
+    '|',
+    '&amp;', ('service_type_id', 'in', [8, 9]), ('is_fleet_admin', '=', False),
+    '|', 
+    ('state', 'not in', ['new', 'running', 'reported']),
+    ('category_service_type', '!=', 'anomaly')
+]}" />
             </xpath>
         </field>
     </record>
