@@ -10,7 +10,7 @@
                 <field name="res_partner_id"/>
                 <field name="res_city_id"/>
                 <field name="email_list"/>
-                <field name="name"/>
+                <field name="name" readonly="1" optional="hide"/>
             </tree>
         </field>
     </record>

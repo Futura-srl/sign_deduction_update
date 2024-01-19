@@ -28,6 +28,14 @@ class FleetVehicleLogServices(models.Model):
     is_fleet_admin = fields.Boolean(compute='_compute_groups_fleet_admin', store=False)
 
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super(FleetVehicleLogServices, self).create(vals_list)
+        if res['service_type_id'].id == 9:
+            self.create_reminder(vals_list, res)
+        return res
+
+    
     @api.depends('is_admin')
     def _compute_groups_admin(self):
         for record in self:
@@ -492,16 +500,15 @@ class FleetVehicleLogServices(models.Model):
 
     # Alla creazione di una anomalia di tipo "Sinistro" bisogna creare un attività che ricordi di completare l'inserimento dei dati
     def create_reminder(self, vals_list, res):
-        _logger.info("!@!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-        _logger.info(vals_list)
-        _logger.info(self)
-        _logger.info(res['id'])
-        
-        _logger.info(vals_list[0]['trip_id'])
-        vehicle_name = self.env['fleet.vehicle'].search_read([('id', '=', vals_list[0]['vehicle_id']),'|', ('active', '=', True), ('active', '=', False)])
-        # Recupero il cdc associato al viaggio
-        _logger.info("CERCO L'ID CDC")
-        cdc_id = self.env['gtms.trip'].search_read([('id', '=', vals_list[0]['trip_id'])], ['organization_id'])
+        # Il cdc va pescato dal viaggio associato o (come seconda opzione) dal contratto di disponibilità
+        # Verifico se ci sono viaggi associati
+        if vals_list[0]['trip_id'] != False: 
+            # Recupero il cdc associato al viaggio
+            _logger.info("CERCO L'ID CDC")
+            cdc_id = self.env['gtms.trip'].search_read([('id', '=', vals_list[0]['trip_id'])], ['organization_id'])
+        else:
+            # recupero il cdc dall'ultimo contratto di disponibilità
+            cdc_id = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vals_list[0]['vehicle_id']), ('cost_subtype_id', '=', 47)], order='id desc',limit=1)
         helpdesk_id = self.env['helpdesk.team'].search_read([('organization_id', '=', cdc_id[0]['organization_id'][0])])
         
         _logger.info(cdc_id[0]['organization_id'][0])
@@ -512,7 +519,7 @@ class FleetVehicleLogServices(models.Model):
                 user_id = self.env['res.users'].search_read([('partner_id', '=', user)], ['id'])
                 _logger.info(user_id[0]['id'])
                 alert = self.env['mail.activity'].create({
-                    'res_name': 'Completamento sinistro ' + vals_list[0]['description'],
+                    'res_name': 'Completamento sinistro ' + str(res['id']),
                     'activity_type_id': 26,
                     'user_id': user_id[0]['id'],
                     'res_model_id': 383, # id di fleet.vehicle.log.service
@@ -608,6 +615,8 @@ class FleetVehicleLogServices(models.Model):
     
             
             # Comunicazione al locatore dei mezzi
+            # Recupero l'ultimo contratto di gli indirizzi mail del locatore
+            
             body_locatore = f"""<p>Buongiorno,</br>
     di seguito riepilogo sinistro</p></br><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
     In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
@@ -656,9 +665,12 @@ class FleetVehicleLogServices(models.Model):
         
     def test_action(self):
         _logger.info("TEST ACTION")
-        self.to_processed()
 
 
 
 
-
+##################
+#    DA FARE     #
+##################
+# - Mettere il campo locator_location visibile solo bnei contratti di noleggio e noleggio scorta
+# - Recuperare la sede del locatore per poter inviare la mai agli indirizzi corretti.
