@@ -37,7 +37,7 @@
                 <button class="oe_stat_button" type="object" name="report_anomaly" attrs="{'invisible': ['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]}">
                     <span>Segnala sinistro</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="test_action">
+                <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}">
                     <span>TEST AZIONE</span>
                 </button>
             </xpath>
