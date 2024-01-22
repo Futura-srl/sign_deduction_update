@@ -36,7 +36,7 @@ class FleetVehicleLogServices(models.Model):
         return res
 
     
-    @api.depends('is_admin')
+    @api.depends('groups_ids')
     def _compute_groups_admin(self):
         for record in self:
             # Trova l'utente connesso
