@@ -303,6 +303,7 @@ class FleetVehicleLogServices(models.Model):
             'email_from': 'noreply@futurasl.com',
             'email_to': email,
             'email_cc': 'catchall@futurasl-stage.odoo.com',
+            'reply_to': 'catchall@futurasl-stage.odoo.com',
             'model': 'fleet.vehicle.log.services',
             'res_id': self.id,
             'body_html': body_employee,
@@ -327,6 +328,7 @@ class FleetVehicleLogServices(models.Model):
                 'email_from': 'noreply@futurasl.com',
                 'email_to': email_interinale,
                 'email_cc': 'catchall@futurasl-stage.odoo.com',
+                'reply_to': 'catchall@futurasl-stage.odoo.com',
                 'model': 'fleet.vehicle.log.services',
                 'res_id': self.id,
                 'body_html': body_interinale,
@@ -610,10 +612,11 @@ class FleetVehicleLogServices(models.Model):
     <p><b>Vi ricordo come da regolamento aziendale firmato dalla risorsa che le trattenute potranno avvenire anche in deroga ai limiti legali imposti.</b></p><br><p>In allegato la documentazione attestante il fatto.</p></br><p>Estratto regolamento aziendale: "Avuto riguardo alla non operabilità dei presupposti legali ex art. 1246 c.c. e art. 545 c.p.c. presupponenti ai fini di una compensazione tecnica, l’autonomia dei rapporti cui si riferiscono i contrapposti crediti delle parti e non operanti quando essi nascano dal medesimo rapporto, comportando soltanto un mero accertamento contabile di dare e avere, la relativa compensazione “tecnica” potrà avvenire anche in deroga ai limiti legali imposti e, dunque, anche in un’unica soluzione ed a prescindere dalle trattenute in corso per eventuali cessioni di credito e/o di pignoramento dello stipendio.</p></br></br><p>Futura</p>"""
                 _logger.info(body_interinale)
                 mail_values = {
-                    'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+                    'subject': f'Sinistro rif.int. {str(self.id)}',
                     'email_from': 'noreply@futurasl.com',
                     'email_to': interinale,
                     'email_cc': 'catchall@futurasl-stage.odoo.com',
+                    'reply_to': 'catchall@futurasl-stage.odoo.com',
                     'model': 'fleet.vehicle.log.services',
                     'res_id': self.id,
                     'body_html': body_interinale,
@@ -639,7 +642,7 @@ class FleetVehicleLogServices(models.Model):
                         # controllo se l'id recuperato è presente in fleet.locator
                         is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
                         # if is_locator != []:
-                        _logger.info(is_locator)
+                        _logger.info(is_Fix email locator)
 
                     if 'is_locator' in locals():    
                         for record in is_locator:
@@ -651,10 +654,11 @@ class FleetVehicleLogServices(models.Model):
         In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
                 _logger.info(body_locatore)
                 mail_values = {
-                    'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+                    'subject': f'Sinistro rif.int. {str(self.id)}',
                     'email_from': 'noreply@futurasl.com',
                     'email_to': email_to,
                     'email_cc': 'catchall@futurasl-stage.odoo.com',
+                    'reply_to': 'catchall@futurasl-stage.odoo.com',                    
                     'model': 'fleet.vehicle.log.services',
                     'res_id': self.id,
                     'body_html': body_locatore,
