@@ -8,9 +8,7 @@
         <field name="arch" type="xml">
             <tree string="Locatori" editable="bottom">
                 <field name="res_partner_id"/>
-                <field name="res_city_id">
-                    <field name="res_city_id"/>
-                </field>
+                <field name="res_city_id"/>
                 <field name="email_list"/>
             </tree>
         </field>
