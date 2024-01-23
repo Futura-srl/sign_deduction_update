@@ -19,3 +19,13 @@ class FleetRenter(models.Model):
     def _name_location(self):
         for record in self:
             record.name = record.res_city_id.name
+
+    
+    @api.model_create_multi
+    def create(self, values_list):
+        for values in values_list:
+            res_city_id = values.get('res_city_id')
+            if res_city_id:
+                city_name = self.env['res.city'].browse(res_city_id).name
+                values['name'] = city_name
+        return super(FleetRenter, self).create(values_list)

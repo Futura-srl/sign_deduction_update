@@ -8,15 +8,16 @@
         <field name="arch" type="xml">
             <tree string="Locatori" editable="bottom">
                 <field name="res_partner_id"/>
-                <field name="res_city_id"/>
+                <field name="res_city_id">
+                    <field name="res_city_id"/>
+                </field>
                 <field name="email_list"/>
-                <field name="name" readonly="1" optional="hide"/>
             </tree>
         </field>
     </record>
 
      <record id="fleet_renter" model="ir.actions.act_window">
-        <field name="name">Fleet_vehicle_rent</field>
+        <field name="name">Fleet vehicle rent</field>
         <field name="res_model">fleet.renter</field>
         <field name="view_mode">tree</field>
     </record>

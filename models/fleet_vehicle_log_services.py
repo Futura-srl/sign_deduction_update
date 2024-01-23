@@ -408,7 +408,8 @@ class FleetVehicleLogServices(models.Model):
 
     # Controllo se l'autista ha contratti attivi. Nel caso ci fossero controllo se è sotto interinale, altrimenti mostro un warning avvisando che non è in forza lavoro.
     def check_interinale_a(self):
-        contacts = ""
+        contacts = set()
+        contacts_str = ""
         employees = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), '|',('active', '=', True), ('active', '=', False)])
         for employee in employees:
             for contract_id in employee['contract_ids']:
@@ -436,16 +437,19 @@ class FleetVehicleLogServices(models.Model):
                             if a['id'] != False:
                                 email = self.env['res.partner'].search_read([('id', '=', a['id'])])[0]['email']
                                 _logger.info(email)
-                                contacts += email + "; "
+                                contacts.add(email)
                         _logger.info(contacts)
-                        return contacts
+                        for contact in contacts:
+                            contacts_str += str(contact + "; ")
+                        return contacts_str
                   
 
     
     
     # Controllo quale fosse il dipendente in essere al momento dell'evento e controllo se sia un dipendente interinale o meno
     def check_interinale(self):
-        contacts = ""
+        contacts = []
+        contacts_str = ""
         employees = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), '|',('active', '=', True), ('active', '=', False)])
         _logger.info('$$$$$$$$$$')
         for employee in employees:
@@ -482,9 +486,15 @@ class FleetVehicleLogServices(models.Model):
                             if a['id'] != False:
                                 email = self.env['res.partner'].search_read([('id', '=', a['id'])])[0]['email']
                                 _logger.info(email)
-                                contacts += email + "; "
-                        _logger.info(contacts)
-                        return contacts
+                                contacts.append(email + "; ")
+                            _logger.info(contacts)
+                            _logger.info(contacts)
+                            contacts.unique()
+                            for record_str in contacts:
+                                _logger.info(record_str)
+                                contacts_str += record_str
+                        _logger.info(contacts_str)
+                        return contacts_str
                 else:
                     _logger.info(f"questo contratto non è quello giusto")
 
@@ -616,30 +626,51 @@ class FleetVehicleLogServices(models.Model):
             
             # Comunicazione al locatore dei mezzi
             # Recupero l'ultimo contratto di gli indirizzi mail del locatore
-            
-            body_locatore = f"""<p>Buongiorno,</br>
-    di seguito riepilogo sinistro</p></br><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
-    In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
-            _logger.info(body_locatore)
-            mail_values = {
-                'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
-                'email_from': 'noreply@futurasl.com',
-                'email_to': 'lcocozza93@icloud.com',
-                'email_cc': 'catchall@futurasl-stage.odoo.com',
-                'model': 'fleet.vehicle.log.services',
-                'res_id': self.id,
-                'body_html': body_locatore,
-                'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
-            }
-    
-            mail = self.env['mail.mail'].sudo().create(mail_values)
-            mail.send()
+            vehicles = self.env['fleet.vehicle'].search_read([('id', '=', self.vehicle_id['id'])])
+            email_to = ""
+            for vehicle in vehicles:
+                contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46])], order='id desc', limit=1)
+                for contract in contracts:
+                    _logger.info(contract['insurer_id'][0])
+                    _logger.info(contract['locator_location'])
+                    if contract['locator_location'] != False:
+                        
+                        _logger.info(contract['locator_location'][0])
+                        # controllo se l'id recuperato è presente in fleet.locator
+                        is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
+                        # if is_locator != []:
+                        _logger.info(is_locator)
+
+                    if 'is_locator' in locals():    
+                        for record in is_locator:
+                            _logger.info(record['email_list'])
+                            email_to = record['email_list']
+            if email_to != "":
+                body_locatore = f"""<p>Buongiorno,</br>
+        di seguito riepilogo sinistro</p></br><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
+        In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
+                _logger.info(body_locatore)
+                mail_values = {
+                    'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+                    'email_from': 'noreply@futurasl.com',
+                    'email_to': email_to,
+                    'email_cc': 'catchall@futurasl-stage.odoo.com',
+                    'model': 'fleet.vehicle.log.services',
+                    'res_id': self.id,
+                    'body_html': body_locatore,
+                    'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
+                }
+        
+                mail = self.env['mail.mail'].sudo().create(mail_values)
+                mail.send()
     
             # Scrivo nel chatter cosa ha appena fatto l'utente
             partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
-            if interinale == []:
+            if interinale == "" and email_to != "":
                 self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>"})
-            else:
+            elif interinale != "" and email_to == "":
+                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail all'interinale:</p><p>Segnalazione apertura sinistro</p>"})
+            elif interinale != "" and email_to != "":
                 self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail all'interinale e al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>"})
             self[0].state = 'reported'
     

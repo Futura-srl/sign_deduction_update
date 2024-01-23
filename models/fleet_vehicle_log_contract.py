@@ -17,11 +17,20 @@ class FleetVehicleLogContract(models.Model):
     @api.depends('vehicle_id')
     def compute_is_locator(self):
         _logger.info(" COMPUTE IS LOCATOR ")
-        vehicles = self.env['fleet.vehicle'].search_read([])
+        vehicles = self.env['fleet.vehicle'].search_read([('id', '=', self.vehicle_id['id'])])
         for vehicle in vehicles:
             contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46])], order='id desc', limit=1)
             for contract in contracts:
                 _logger.info(contract['insurer_id'][0])
+                _logger.info(contract['locator_location'][0])
+                # controllo se l'id recuperato è presente in fleet.locator
+                is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
+                if is_locator != []:
+                    self[0].is_locator = True
+                _logger.info(is_locator)
+                for record in is_locator:
+                    _logger.info(record['email_list'])
+
             # # recupero il locatore del mezzo
             # locator = self.env['fleet.rent'].search_read([('res_partner_id', '=', record.insurer_id)])
             # if locator != []:

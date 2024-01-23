@@ -7,7 +7,10 @@
         <field name="inherit_id" ref="fleet.fleet_vehicle_log_contract_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='insurer_id']" position="after">
-                <field name="locator_location"  options="{'create': false, 'create_edit': false}"/>
+                <field name="locator_location" related="name" options="{'create': false, 'create_edit': false}"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="before">
+                <button name="compute_is_locator" string="test compute" type="object"/>
             </xpath>
         </field>
     </record>
