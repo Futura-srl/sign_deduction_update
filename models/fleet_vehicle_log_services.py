@@ -641,8 +641,6 @@ class FleetVehicleLogServices(models.Model):
                         _logger.info(contract['locator_location'][0])
                         # controllo se l'id recuperato è presente in fleet.locator
                         is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
-                        # if is_locator != []:
-                        _logger.info(is_Fix email locator)
 
                     if 'is_locator' in locals():    
                         for record in is_locator:
