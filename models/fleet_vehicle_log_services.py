@@ -649,7 +649,7 @@ class FleetVehicleLogServices(models.Model):
             vehicles = self.env['fleet.vehicle'].search_read([('id', '=', self.vehicle_id['id'])])
             email_to = ""
             for vehicle in vehicles:
-                contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46])], order='id desc', limit=1)
+                contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46,55])], order='id desc', limit=1)
                 for contract in contracts:
                     _logger.info(contract['insurer_id'][0])
                     _logger.info(contract['locator_location'])
