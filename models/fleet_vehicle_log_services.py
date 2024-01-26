@@ -26,7 +26,10 @@ class FleetVehicleLogServices(models.Model):
     groups_ids = fields.Char(string='Groups of the User', compute='_compute_groups_admin', store=False)
     is_admin = fields.Boolean(compute='_compute_groups_admin', store=False)
     is_fleet_admin = fields.Boolean(compute='_compute_groups_fleet_admin', store=False)
-
+    is_fleet_rop = fields.Boolean(compute='_compute_groups_fleet_rop', store=False)
+    replacement_start_date = fields.Datetime(string="Replacement Start Datetime")
+    replacement_end_date = fields.Datetime(string="Replacement Start Datetime")
+    email_ids = fields.One2many('mail.mail', 'res_id', string='Emails', domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -57,6 +60,17 @@ class FleetVehicleLogServices(models.Model):
                 record.is_fleet_admin = True
             else:
                 record.is_fleet_admin = False
+                
+    @api.depends('is_fleet_rop')
+    def _compute_groups_fleet_rop(self):
+        for record in self:
+            # Trova l'utente connesso
+            user = self.env.user
+            # Ottieni gli identificatori dei gruppi dell'utente connesso
+            if 117 in user.groups_id.ids:
+                record.is_fleet_rop = True
+            else:
+                record.is_fleet_rop = False
 
 
     
@@ -302,8 +316,8 @@ class FleetVehicleLogServices(models.Model):
             'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
             'email_from': 'noreply@futurasl.com',
             'email_to': email,
-            'email_cc': 'catchall@futurasl-stage.odoo.com',
-            'reply_to': 'catchall@futurasl-stage.odoo.com',
+            'email_cc': 'catchall@futurasl.odoo.com',
+            'reply_to': 'catchall@futurasl.odoo.com',
             'model': 'fleet.vehicle.log.services',
             'res_id': self.id,
             'body_html': body_employee,
@@ -327,8 +341,8 @@ class FleetVehicleLogServices(models.Model):
                 'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
                 'email_from': 'noreply@futurasl.com',
                 'email_to': email_interinale,
-                'email_cc': 'catchall@futurasl-stage.odoo.com',
-                'reply_to': 'catchall@futurasl-stage.odoo.com',
+                'email_cc': 'catchall@futurasl.odoo.com',
+                'reply_to': 'catchall@futurasl.odoo.com',
                 'model': 'fleet.vehicle.log.services',
                 'res_id': self.id,
                 'body_html': body_interinale,
@@ -583,7 +597,10 @@ class FleetVehicleLogServices(models.Model):
     
             # Recupero dell'allegato
             attachment_id = self.env['documents.document'].search_read([('tag_ids', '=', 43),('service_id.id', '=', self.id)], ['attachment_id'])[0]['attachment_id'][0]
-            attachment_ids = self.env['documents.document'].search_read([('tag_ids', 'in', [43, 45, 57, 58]),('service_id.id', '=', self.id)], ['attachment_id']) # Gli allegati da inviare sono: Modulo dichiarazione danni, Foto sinistro, CAI, Denuncia polizia
+            attachment_ids = self.env['documents.document'].search_read([('tag_ids', 'in', [43, 59, 57, 58]),('service_id.id', '=', self.id)], ['attachment_id']) # Gli allegati da inviare sono: Modulo dichiarazione danni, Foto sinistro, CAI, Denuncia polizia
+            is_foto_sinistro = self.env['documents.document'].search_read([('tag_ids', 'in', [59]),('service_id.id', '=', self.id)], ['attachment_id']) 
+            is_cai = self.env['documents.document'].search_read([('tag_ids', 'in', [57]),('service_id.id', '=', self.id)], ['attachment_id'])
+            is_denuncia = self.env['documents.document'].search_read([('tag_ids', 'in', [58]),('service_id.id', '=', self.id)], ['attachment_id'])
             attach = []
             for attachments in attachment_ids:
                 _logger.info(attachments)
@@ -605,7 +622,7 @@ class FleetVehicleLogServices(models.Model):
             # Recupero l'interinale
             interinale = self.check_interinale_a()
             # Se è interinale e la responsabilità non è "Sconosciuta" o di "Terzi" procedo con l'invio della comunicazione
-            if interinale != [] and self.responsibility not in ['unnknown','third']:
+            if interinale != "" and self.responsibility not in ['unnknown','third']:
                 # Siccome il dipendente è attualmente interinale, bisognerà avvisare del sinistro l'interinale.
                 body_interinale = f"""<p>Alla cortese attenzione del Responsabile Risorse Umane,</br>di seguito riepilogo sinistro:</br></br><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Veicolo: </b>{self.vehicle_id.license_plate}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></br></br><p><b>Danni mezzo proprio ed eventuali parti coinvolte:</b><ul>{list_damages}</ul></p>
     <p><U>Potete procedere alla trattenuta della franchigia pari a € {importo_formattato},eventuali rateizzazioni verranno comunicate come di consueto a mezzo Timesheet</U></p>
@@ -613,10 +630,10 @@ class FleetVehicleLogServices(models.Model):
                 _logger.info(body_interinale)
                 mail_values = {
                     'subject': f'Sinistro rif.int. {str(self.id)}',
-                    'email_from': 'noreply@futurasl.com',
+                    'email_from': 'catchall@futurasl.com',
                     'email_to': interinale,
-                    'email_cc': 'catchall@futurasl-stage.odoo.com',
-                    'reply_to': 'catchall@futurasl-stage.odoo.com',
+                    'email_cc': 'catchall@futurasl.com',
+                    'reply_to': 'catchall@futurasl.com',
                     'model': 'fleet.vehicle.log.services',
                     'res_id': self.id,
                     'body_html': body_interinale,
@@ -653,10 +670,10 @@ class FleetVehicleLogServices(models.Model):
                 _logger.info(body_locatore)
                 mail_values = {
                     'subject': f'Sinistro rif.int. {str(self.id)}',
-                    'email_from': 'noreply@futurasl.com',
+                    'email_from': 'catchall@futurasl.com',
                     'email_to': email_to,
-                    'email_cc': 'catchall@futurasl-stage.odoo.com',
-                    'reply_to': 'catchall@futurasl-stage.odoo.com',                    
+                    'email_cc': 'catchall@futurasl.com',
+                    'reply_to': 'catchall@futurasl.com',                    
                     'model': 'fleet.vehicle.log.services',
                     'res_id': self.id,
                     'body_html': body_locatore,
@@ -667,13 +684,25 @@ class FleetVehicleLogServices(models.Model):
                 mail.send()
     
             # Scrivo nel chatter cosa ha appena fatto l'utente
+            str_foto = ""
+            str_cai = ""
+            str_denuncia = ""
+            if is_foto_sinistro != []:
+                str_foto = "<p>Foto del sinistro</p>"
+            if is_cai != []:
+                str_cai = "<p>CAI</p>"
+            if is_denuncia != []:
+                str_denuncia = "<p>Denuncia sinistro polizia</p>"
+
+
+            
             partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
             if interinale == "" and email_to != "":
-                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>"})
+                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
             elif interinale != "" and email_to == "":
-                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail all'interinale:</p><p>Segnalazione apertura sinistro</p>"})
+                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail all'interinale:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
             elif interinale != "" and email_to != "":
-                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': "<p>Ho appena inviato la seguente mail all'interinale e al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>"})
+                self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail all'interinale e al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
             self[0].state = 'reported'
     
             # Una volta cambiato lo stato in "Segnalato" devo cancellare eventuali attività
@@ -698,6 +727,7 @@ class FleetVehicleLogServices(models.Model):
         
     def test_action(self):
         _logger.info("TEST ACTION")
+        self.check_interinale_a()
 
 
 

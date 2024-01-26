@@ -12,7 +12,7 @@ class FleetVehicleLogContract(models.Model):
 
     locator_location = fields.Many2one('fleet.renter', domain="[('res_partner_id', '=', insurer_id)]")
     is_locator = fields.Boolean(_compute="compute_is_locator")
-
+    
 
     @api.depends('vehicle_id')
     def compute_is_locator(self):

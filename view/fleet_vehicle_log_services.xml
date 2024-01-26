@@ -9,14 +9,18 @@
                 <field name="groups_ids" invisible="1"/>
                 <field name="is_admin" invisible="1"/>
                 <field name="is_fleet_admin" invisible="1"/>
+                <field name="is_fleet_rop" invisible="1"/>
                 <field name="state" invisible="1"/>
+                <field name="service_type_id" invisible="1"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
-                        attrs="{'invisible': ['|', '|', ('is_fleet_admin', '=', False), ('state', 'not in', ['new', 'reported', 'running']), ('category_service_type', '!=', 'anomaly')]}"/>
+                        attrs="{'invisible': [
+                    ('state', 'not in', ['new', 'reported', 'running'])
+                    ,'|',  ('is_fleet_admin', '=', False), ('service_type_id', 'in', [8,9])]}"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
@@ -37,7 +41,7 @@
                 <button class="oe_stat_button" type="object" name="report_anomaly" attrs="{'invisible': ['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]}">
                     <span>Segnala sinistro</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}">
+                <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}" groups="__export__.res_groups_137_2440cc2b">
                     <span>TEST AZIONE</span>
                 </button>
             </xpath>
@@ -77,6 +81,28 @@
     ('state', 'not in', ['new', 'running', 'reported']),
     ('category_service_type', '!=', 'anomaly')
 ]}" />
+            </xpath>
+        </field>
+    </record>
+    
+    <record id="fleet_vehicle_log_services_form_inherit_3" model="ir.ui.view">
+        <field name="name">fleet.vehicle.log.services.form.inherit.3</field>
+        <field name="model">fleet.vehicle.log.services</field>
+        <field name="inherit_id" ref="stesi_fleet_documents.fleet_vehicle_log_services_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="email" string="Email">
+                    <field name="email_ids" readonly="True" domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]">
+                        <tree>
+                            <field name="date"/>
+                            <field name="subject"/>
+                            <field name="email_to"/>
+                            <field name="author_id"/>
+                            <field name="state" widget="badge"/>
+                            <!-- <button name="open_rel_documents" type="object" icon="fa-file" context="{'document_id': id, 'log_service_id': service_id}"/> -->
+                        </tree>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>

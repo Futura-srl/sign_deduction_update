@@ -9,10 +9,14 @@
             <xpath expr="//field[@name='insurer_id']" position="after">
                 <field name="locator_location" related="name" options="{'create': false, 'create_edit': false}"/>
             </xpath>
+            <xpath expr="//button[@name='action_close'][2]" position="replace">
+                <button name="action_close" attrs="{'invisible': [('state', 'not in', ['open', 'expired', 'futur'])]}" type="object" string="Close Contract" groups="fleet.fleet_group_manager,__export__.res_groups_116_e61beb39"/>
+            </xpath>
             <xpath expr="//field[@name='state']" position="before">
-                <button name="compute_is_locator" string="test compute" type="object"/>
+                <button name="compute_is_locator" string="test compute" type="object" groups="__export__.res_groups_137_2440cc2b"/>
             </xpath>
         </field>
     </record>
+
     
 </odoo>
