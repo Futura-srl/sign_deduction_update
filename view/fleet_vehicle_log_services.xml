@@ -98,7 +98,8 @@
                             <field name="subject"/>
                             <field name="email_to"/>
                             <field name="author_id"/>
-                            <field name="state" widget="badge" decoration-muted="state in ('sent', 'cancel')" decoration-info="state=='outgoing'" decoration-danger="state=='exception'" modifiers="{&quot;readonly&quot;: true}"/>
+                            <field name="state" widget="badge"/>
+                            <!-- <button name="open_rel_documents" type="object" icon="fa-file" context="{'document_id': id, 'log_service_id': service_id}"/> -->
                         </tree>
                     </field>
                 </page>

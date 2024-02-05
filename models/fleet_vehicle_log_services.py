@@ -677,7 +677,7 @@ class FleetVehicleLogServices(models.Model):
                     'model': 'fleet.vehicle.log.services',
                     'res_id': self.id,
                     'body_html': body_locatore,
-                    'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
+                    'attachment_ids': [(4, attach)],  # Aggiungi l'allegato all'email
                 }
         
                 mail = self.env['mail.mail'].sudo().create(mail_values)
