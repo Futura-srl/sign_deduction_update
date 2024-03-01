@@ -19,8 +19,8 @@
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
                         attrs="{'invisible': [
-                    ('state', 'not in', ['new', 'reported', 'running'])
-                    ,'|',  ('is_fleet_admin', '=', False), ('service_type_id', 'in', [8,9])]}"/>
+                    ('service_type_id', 'in', [8,9]), ('is_fleet_admin', '=', False)
+                    ,'|',  ('state', 'not in', ['new', 'reported', 'running']), ('service_type_id', 'in', [8,9])]}"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
