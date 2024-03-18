@@ -62,7 +62,7 @@
                         <field name="note" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed_by" optional="hide"/> <!-- Forse mostrare solo per le multe-->
-                        <field name="processed_to" optional="hide"/> <!-- Forse mostrare solo per le multe-->
+                        <field name="processed_on" optional="hide"/> <!-- Forse mostrare solo per le multe-->
                     </tree>
                 </field>
             </xpath>
