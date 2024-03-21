@@ -61,6 +61,7 @@
                         <field name="competence_contact_id" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="note" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed" optional="show"/> <!-- Forse mostrare solo per le multe-->
+                        <field name="invoice" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed_by" optional="hide"/> 
                         <field name="processed_on" optional="hide"/> 
                     </tree>
