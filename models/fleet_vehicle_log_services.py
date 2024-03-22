@@ -30,6 +30,7 @@ class FleetVehicleLogServices(models.Model):
     replacement_start_date = fields.Datetime(string="Replacement Start Datetime")
     replacement_end_date = fields.Datetime(string="Replacement Start Datetime")
     email_ids = fields.One2many('mail.mail', 'res_id', string='Emails', domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]")
+    competence_invoice = fields.Char()
 
     @api.model_create_multi
     def create(self, vals_list):
