@@ -61,7 +61,6 @@
                         <field name="competence_contact_id" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="note" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed" optional="show"/> <!-- Forse mostrare solo per le multe-->
-                        <field name="invoice" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed_by" optional="hide"/> 
                         <field name="processed_on" optional="hide"/> 
                     </tree>
@@ -75,10 +74,6 @@
         <field name="model">fleet.vehicle.log.services</field>
         <field name="inherit_id" ref="fleet_service_with_deduction.fleet_vehicle_log_services_form_inherit"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='competence_contact_id']" position="after">
-                <field name="competence_invoice" attrs="{'invisible': ['|',('competence_contact_id', '=', False), ('service_type_id', '!=', 8)]}"/>
-                <field name="competence_date_invoice" attrs="{'invisible': ['|',('competence_contact_id', '=', False), ('service_type_id', '!=', 8)]}"/>
-            </xpath>
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Set as completed" type="object" class="btn-secondary"
                         attrs="{'invisible': [
