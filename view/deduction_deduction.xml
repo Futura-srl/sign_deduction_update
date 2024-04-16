@@ -2,8 +2,8 @@
 <odoo>
 
     <!-- Relativo alla visualizzazione della tabella ad alberlo -->
-    <record id="deduction_deduction_views_tree_inherit_5" model="ir.ui.view">
-        <field name="name">deduction_deduction_views_tree_inherit_5</field>
+    <record id="deduction_deduction_views_tree_inherit" model="ir.ui.view">
+        <field name="name">deduction_deduction_views_tree_inherit</field>
         <field name="model">deduction.deduction</field>
         <field name="arch" type="xml">
             <tree string="Deduction" editable="bottom">
@@ -11,7 +11,9 @@
                 <field name="employee_id"/>
                 <field name="deduction_value"/>
                 <field name="competence_contact_id"/>
+                <field name="invoice"/>
                 <field name="note"/>
+                <field name="fleet_vehicle_log_service_id"/>
                 <field name="processed"/>
                 <field name="processed_by" invisible="1"/>
                 <field name="processed_on" invisible="1"/>
