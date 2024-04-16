@@ -13,7 +13,7 @@
                 <field name="competence_contact_id"/>
                 <field name="invoice"/>
                 <field name="note"/>
-                <field name="fleet_vehicle_log_service_id"/>
+                <field name="fleet_vehicle_log_service_id" readonly="1"/>
                 <field name="processed"/>
                 <field name="processed_by" invisible="1"/>
                 <field name="processed_on" invisible="1"/>
