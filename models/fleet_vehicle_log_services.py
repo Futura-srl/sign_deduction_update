@@ -536,6 +536,9 @@ class FleetVehicleLogServices(models.Model):
             # recupero il cdc dall'ultimo contratto di disponibilità
             cdc_id = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vals_list[0]['vehicle_id']), ('cost_subtype_id', '=', 47)], order='id desc',limit=1)
         helpdesk_id = self.env['helpdesk.team'].search_read([('organization_id', '=', cdc_id[0]['organization_id'][0])])
+
+        if not helpdesk_id:
+            raise ValidationError(_("Errore nella creazione dell'anomalia e del reminder. Non sei un ROP autorizzato. Per farsi aggiungere contattare raffaele.tesolin@futurasl.com o il 351/7676798."))
         
         _logger.info(cdc_id[0]['organization_id'][0])
         _logger.info(helpdesk_id)
