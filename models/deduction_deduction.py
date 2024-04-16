@@ -7,6 +7,7 @@ class DeductionDeduction(models.Model):
     processed = fields.Boolean()
     processed_by = fields.Char(readonly=True)
     processed_on = fields.Datetime(readonly=True)
+    invoice = fields.Char()
     
     @api.onchange('processed')
     def _deduction_processed(self):
