@@ -21,6 +21,27 @@
         </field>
     </record>
 
+    <record id="deduction_deduction_view_search" model="ir.ui.view">
+        <field name="name">deduction.deduction.view.search</field>
+        <field name="model">deduction.deduction</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="deduction_value"/>
+                <field name="competence_contact_id"/>
+                <field name="invoice"/>
+                <field name="note"/>
+                <field name="fleet_vehicle_log_service_id"/>
+                <field name="processed"/>
+                <filter name="processed" string="Processed" domain="[('processed', '=', True)]"/>
+                <filter name="not_processed" string="Not processed" domain="[('processed', '=', False)]"/>
+                <filter name="multe" string="Multe" domain="[('fleet_vehicle_log_service_id', 'ilike', 'multe')]"/>
+                <filter name="sinitri" string="Sinistri" domain="[('fleet_vehicle_log_service_id', 'ilike', 'sinistri')]"/>
+            </search>
+        </field>
+    </record>
+
     <record id="deduction_deduction" model="ir.actions.act_window">
         <field name="name">Deduction</field>
         <field name="res_model">deduction.deduction</field>
