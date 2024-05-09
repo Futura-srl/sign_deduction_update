@@ -4,7 +4,7 @@
     'author': "Luca Cocozza",
     'application': True,
     'description': "Modulo per generare il documento relativo al danno / multa da far firmare al dipendente.",
-    'depends': ['fleet_deduction_sign', 'fleet_service_with_deduction'],
+    'depends': ['fleet_deduction_sign', 'fleet_service_with_deduction', 'fleet', 'hr', 'stesi_fleet_documents'],
     'data': [
         'data/ir.model.access.csv',
         # # Caricamento delle view,

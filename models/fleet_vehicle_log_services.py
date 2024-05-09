@@ -34,9 +34,10 @@ class FleetVehicleLogServices(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super(FleetVehicleLogServices, self).create(vals_list)
-        if res['service_type_id'].id == 9:
-            self.create_reminder(vals_list, res)
-        return res
+        if res:
+            if res['service_type_id'].id == 9:
+                self.create_reminder(vals_list, res)
+            return res
 
     
     @api.depends('groups_ids')
@@ -408,10 +409,14 @@ class FleetVehicleLogServices(models.Model):
             raise ValidationError(_("Il res.partner non ha una mail personale inserita."))
         # Controllo se il res.partner ha dipendenti collegati con contratti attivi
         contract_active = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id)])
-        _logger.info("*****************************")
-        _logger.info(contract_active)
-        if contract_active == []:
-            raise ValidationError(_("L'autista non ha alcun contratto attivo."))
+        if contract_active:
+            _logger.info(contract_active[0]['contract_id'][0])
+            contract = self.env['hr.contract'].search([('id', '=', contract_active[0]['contract_id'][0])])
+            _logger.info(contract.state)
+            if contract.state != 'open':
+                raise ValidationError(_("L'autista non ha alcun contratto attivo."))
+        else:
+            raise ValidationError(_("L'autista non ha alcun dipendente attivo."))
 
     
     # FUNZIONE DI PROVA
@@ -553,7 +558,7 @@ class FleetVehicleLogServices(models.Model):
                     'user_id': user_id[0]['id'],
                     'res_model_id': 383, # id di fleet.vehicle.log.service
                     'res_id': res['id'],
-                    'note': "<p style='margin-bottom:0px'>Per procedere allo step 'Segnalato' il sinistro deve essere completato con le seguenti informazioni:</p><ul style='margin-bottom:0px'><li>Modulo dichiarazione danno</li><li>Note descrittive</li></ul><li>Eventuale CID</li><li>Eventuali foto</li>"
+                    'note': "<p style='margin-bottom:0px'>Per procedere allo step 'Segnalato' il sinistro deve essere completato con le seguenti informazioni:</p><ul style='margin-bottom:0px'><li>Modulo dichiarazione danno</li><li>Note descrittive</li><li>Eventuale CID</li><li>Eventuali foto</li></ul>"
                 })
                 _logger.info(alert)
 
