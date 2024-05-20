@@ -37,7 +37,7 @@ class FleetVehicleLogServices(models.Model):
         if res:
             if res['service_type_id'].id == 9:
                 self.create_reminder(vals_list, res)
-            return res
+        return res
 
     
     @api.depends('groups_ids')
