@@ -261,9 +261,22 @@ class FleetVehicleLogServices(models.Model):
         
         template = self.env['sign.template'].create(template_values)
         _logger.info(template.id)
-        return template.id
+        return template.id, attachment_id
 
-    def send_attachment_with_email(self, attachment_id):
+    def send_attachment_with_email(self, attachment_id, attachment_for_rop_id = ""):
+        # Recupero i rop che dovranno ricevere anche loro la mail
+        organization_id = self.env['gtms.trip'].search_read([('id', '=', self.trip_id.id)], ['organization_id'])
+        _logger.info(organization_id[0]['organization_id'][0])
+        rop_ids = self.env['helpdesk.team'].search_read([('organization_id', '=', organization_id[0]['organization_id'][0])], ['message_partner_ids'])
+        _logger.info(rop_ids[0])
+        mail_rop = ""
+        rop_ids = self.env['res.partner'].search([('id', 'in', rop_ids[0]['message_partner_ids'])])
+        # mail += self.env['res.partner'].search([('id', '=', rop_ids['message_partner_ids'])])
+        for rop_id in rop_ids:
+            _logger.info(f"Stampo ROP_ID {rop_id.email}")
+            
+            mail_rop += rop_id['email'] + "; "
+        _logger.info(mail_rop)
         # Controllo se è interinale
         is_interinal = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), ('active', '=', True)])
         email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0]['email_personale']
@@ -299,10 +312,16 @@ class FleetVehicleLogServices(models.Model):
 <p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
 </br></br>
 <p>Futura</p>'''
+            body_rop = f"""<p>Buongiorno,</br>in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti.</p>
+</br>
+<p>Futura</p>"""
         else:
             body_employee = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
 <p>Riceverà ulteriore mail con un link che riporterà alla contestazione da firmare per presa visione, tale firma non esclude l’eventuale addebito</p>
 <p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
+</br>
+<p>Futura</p>"""
+            body_rop = f"""<p>Buongiorno,</br>in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
 </br>
 <p>Futura</p>"""
             body_interinale = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
@@ -324,9 +343,23 @@ class FleetVehicleLogServices(models.Model):
             'body_html': body_employee,
             'attachment_ids': [(4, attachment_id)],  # Aggiungi l'allegato all'email
         }
-
         mail = self.env['mail.mail'].sudo().create(mail_values)
         mail.send()
+
+        # Invia l'email con l'allegato al dipendente
+        mail_rop_values = {
+            'subject': f'Contravvenzione ns. rif. {str(self.id)} - Verbale n°  {self.description}  - {self.purchaser_id.name}',
+            'email_from': 'noreply@futurasl.com',
+            'email_to': mail_rop,
+            'reply_to': 'catchall@futurasl.odoo.com',
+            'model': 'fleet.vehicle.log.services',
+            'res_id': self.id,
+            'body_html': body_rop,
+            'attachment_ids': [(4, attachment_for_rop_id)],  # Aggiungi l'allegato all'email
+        }
+        mail = self.env['mail.mail'].sudo().create(mail_rop_values)
+        mail.send()
+        
         partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
         self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'message_type': 'comment','body': "<p>Ho appena inviato le seguenti email al dipendente:</p><p>Comunicazione da far firmare al dipendente</p><p>Copia del verbale</p>"})
 
@@ -360,7 +393,7 @@ class FleetVehicleLogServices(models.Model):
             
     def create_document_request_sign(self):
         self.check_data()
-        template_id = self.add_template_for_sign()
+        template_id, attachment_for_rop_id = self.add_template_for_sign()
         _logger.info(template_id)
         reference_name = str(self.id) + " " + str(self.service_type_id.name) + " " + str(self.description)
         sign_request = self.env['sign.request'].with_context(no_sign_mail=True).create({
@@ -388,7 +421,7 @@ class FleetVehicleLogServices(models.Model):
         sign_template.write({'active': False})
         self.state = 'reported'
         attachment_id = self.env['documents.document'].search_read([('tag_ids', '=', 29),('service_id.id', '=', self.id)], ['attachment_id'])[0]['attachment_id'][0]
-        self.send_attachment_with_email(attachment_id)
+        self.send_attachment_with_email(attachment_id, attachment_for_rop_id)
         
 
 
@@ -583,6 +616,10 @@ class FleetVehicleLogServices(models.Model):
     def report_anomaly(self):
         document = self.check_documents()
         if document == True:
+            # Recupero i rop che dovranno ricevere anche loro la mail
+            organization_id = self.env['gtms.trip'].search([('id', '=', self.trip_id)], ['organization_id'])
+            rop_ids = self.env['helpdesk.team'].search([('organization_id', '=', organization_id)], ['message_partener_ids'])
+            
             # Visto che tutti i documenti obbligatori sono stati allegati è possibile procedere con la segnalazione del sinistro al fornitore dei mezzi e ad eventuale interinale
             
             # Recupero l'importo che dovrà essere addebitato
