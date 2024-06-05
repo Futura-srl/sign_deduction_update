@@ -45,7 +45,7 @@
                 <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}" groups="__export__.res_groups_137_2440cc2b">
                     <span>TEST AZIONE</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="confirm_signed_document" attrs="{'invisible': ['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]}" groups="__export__.res_groups_137_2440cc2b">
+                <button class="oe_stat_button" type="object" name="confirm_signed_document" attrs="{'invisible': ['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]}" groups="__export__.res_groups_137_2440cc2b, __export__.res_groups_116_5d6ba1ab, fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
                 </button>
             </xpath>
