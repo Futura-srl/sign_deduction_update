@@ -30,6 +30,7 @@ class FleetVehicleLogServices(models.Model):
     replacement_start_date = fields.Datetime(string="Replacement Start Datetime")
     replacement_end_date = fields.Datetime(string="Replacement Start Datetime")
     email_ids = fields.One2many('mail.mail', 'res_id', string='Emails', domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]")
+    signed_document = fields.Boolean(default=False, readonly=True)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -81,6 +82,12 @@ class FleetVehicleLogServices(models.Model):
    #################### 
    #################### 
 
+    def confirm_signed_document(self):
+        for record in self:
+            if record.signed_document == False:
+                record.signed_document = True
+            else:
+                record.signed_document = False
     
     def action_view_documents_sign(self):
         # action = self.env.ref('sign.sign_request_action').read()[0]

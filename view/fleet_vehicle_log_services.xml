@@ -12,6 +12,7 @@
                 <field name="is_fleet_rop" invisible="1"/>
                 <field name="state" invisible="1"/>
                 <field name="service_type_id" invisible="1"/>
+                <field name="signed_document" invisible="1"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -43,6 +44,9 @@
                 </button>
                 <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}" groups="__export__.res_groups_137_2440cc2b">
                     <span>TEST AZIONE</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="confirm_signed_document" attrs="{'invisible': ['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]}" groups="__export__.res_groups_137_2440cc2b">
+                    <span>Documento Firmato</span>
                 </button>
             </xpath>
             
