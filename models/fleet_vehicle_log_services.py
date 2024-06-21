@@ -624,7 +624,7 @@ class FleetVehicleLogServices(models.Model):
         document = self.check_documents()
         if document == True:
             # Recupero i rop che dovranno ricevere anche loro la mail
-            organization_id = self.env['gtms.trip'].search([('id', '=', self.trip_id)], ['organization_id'])
+            organization_id = self.env['gtms.trip'].search([('id', '=', self.trip_id.id)], ['organization_id'])
             rop_ids = self.env['helpdesk.team'].search([('organization_id', '=', organization_id)], ['message_partener_ids'])
             
             # Visto che tutti i documenti obbligatori sono stati allegati è possibile procedere con la segnalazione del sinistro al fornitore dei mezzi e ad eventuale interinale
