@@ -583,7 +583,7 @@ class FleetVehicleLogServices(models.Model):
         helpdesk_id = self.env['helpdesk.team'].search_read([('organization_id', '=', cdc_id[0]['organization_id'][0])])
 
         if not helpdesk_id:
-            raise ValidationError(_("Errore nella creazione dell'anomalia e del reminder. Non sei un ROP autorizzato. Per farsi aggiungere contattare raffaele.tesolin@futurasl.com o il 351/7676798."))
+            raise ValidationError(_("Errore nella creazione dell'anomalia e del reminder. Non sei un ROP autorizzato. Per farsi aggiungere contattare raffaele.tesolin@futurasl.com o il 0431/611714."))
         
         _logger.info(cdc_id[0]['organization_id'][0])
         _logger.info(helpdesk_id)
