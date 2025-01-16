@@ -19,9 +19,9 @@
             </xpath>
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
-                        attrs="{'invisible': [
+                        invisible="[
                     ('service_type_id', 'in', [8,9]), ('is_fleet_admin', '=', False)
-                    ,'|',  ('state', 'not in', ['new', 'reported', 'running']), ('service_type_id', 'in', [8,9])]}"/>
+                    ,'|',  ('state', 'not in', ['new', 'reported', 'running']), ('service_type_id', 'in', [8,9])]"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
@@ -29,32 +29,32 @@
                     <span>Invia detrazione</span>
                 </button> -->
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" attrs="{'invisible': ['|', '|', '|', ('is_fleet_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', 'not in', [8])]}">
+                        icon="fa-paper-plane" invisible="['|', '|', '|', ('is_fleet_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', 'not in', [8])]">
                     <span>Invia detrazione</span>
                 </button>
                 <button class="oe_stat_button btn-danger" type="object" name="cancelled"
-                        icon="fa-trash" attrs="{'invisible': [('state', '=', 'cancelled')]}">
+                        icon="fa-trash" invisible="[('state', '=', 'cancelled')]">
                     <span>ANNULLA</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="to_processed" attrs="{'invisible': ['|', ('state', 'not in', ['reported']),('service_type_id', '!=', 9)]}">
+                <button class="oe_stat_button" type="object" name="to_processed" invisible="['|', ('state', 'not in', ['reported']),('service_type_id', '!=', 9)]">
                     <span>Processa</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="report_anomaly" attrs="{'invisible': ['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]}">
+                <button class="oe_stat_button" type="object" name="report_anomaly" invisible="['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]">
                     <span>Segnala sinistro</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="test_action" attrs="{'invisible': [('is_admin', '=', False)]}" groups="__export__.res_groups_137_2440cc2b">
+                <button class="oe_stat_button" type="object" name="test_action" invisible="[('is_admin', '=', False)]" groups="__export__.res_groups_137_2440cc2b">
                     <span>TEST AZIONE</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="confirm_signed_document" attrs="{'invisible': ['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]}" groups="__export__.res_groups_137_2440cc2b, __export__.res_groups_116_5d6ba1ab, fleet.fleet_group_manager">
+                <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]" groups="__export__.res_groups_137_2440cc2b, __export__.res_groups_116_5d6ba1ab, fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
                 </button>
             </xpath>
             
             
             <xpath expr="//header/field[@name='state']" position="replace">
-                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'in', [7,8,9])]}" statusbar_visible="new,running,done,cancelled"/>
-                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [8])]}" statusbar_visible="new,reported,done,cancelled"/>
-                <field name="state" widget="statusbar" attrs="{'invisible': [('service_type_id', 'not in', [7,9])]}" statusbar_visible="new,reported,running,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="[('service_type_id', 'in', [7,8,9])]" statusbar_visible="new,running,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="[('service_type_id', 'not in', [8])]" statusbar_visible="new,reported,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="[('service_type_id', 'not in', [7,9])]" statusbar_visible="new,reported,running,done,cancelled"/>
             </xpath>
             <xpath expr="//field[@name='deduction_ids']" position="replace">
                 <field name="deduction_ids" context="{'default_fleet_vehicle_log_service_id': id}" nolabel="1">
@@ -80,13 +80,13 @@
         <field name="arch" type="xml">
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Set as completed" type="object" class="btn-secondary"
-                        attrs="{'invisible': [
+                        invisible="[
     '|',
     '&amp;', ('service_type_id', 'in', [8, 9]), ('is_fleet_admin', '=', False),
     '|', 
     ('state', 'not in', ['new', 'running', 'reported']),
     ('category_service_type', '!=', 'anomaly')
-]}" />
+]" />
             </xpath>
         </field>
     </record>
