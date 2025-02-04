@@ -6,22 +6,21 @@
         <field name="inherit_id" ref="fleet_deduction_sign.anomaly_form_inherit"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="before">
-                <field name="groups_ids" invisible="1"/>
-                <field name="is_admin" invisible="1"/>
-                <field name="is_fleet_admin" invisible="1"/>
-                <field name="is_fleet_rop" invisible="1"/>
-                <field name="state" invisible="1"/>
-                <field name="service_type_id" invisible="1"/>
-                <field name="signed_document" invisible="1"/>
+                <field name="groups_ids" invisible="0"/>
+                <field name="is_admin" invisible="0"/>
+                <field name="is_fleet_admin" invisible="0"/>
+                <field name="is_fleet_rop" invisible="0"/>
+                <field name="state" invisible="0"/>
+                <field name="service_type_id" invisible="0"/>
+                <field name="signed_document" invisible="0"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
-                        invisible="[
-                    ('service_type_id', 'in', [8,9]), ('is_fleet_admin', '=', False)
-                    ,'|',  ('state', 'not in', ['new', 'reported', 'running']), ('service_type_id', 'in', [8,9])]"/>
+                        invisible="service_type_id in [%(maintenance_request.fleet_service_type_multe)d, %(maintenance_request.fleet_service_type_sinistri)d] and is_fleet_admin == False
+                    and state not in ['new', 'reported', 'running'] or service_type_id in [%(maintenance_request.fleet_service_type_multe)d, %(maintenance_request.fleet_service_type_sinistri)d]"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
@@ -29,32 +28,32 @@
                     <span>Invia detrazione</span>
                 </button> -->
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" invisible="['|', '|', '|', ('is_fleet_admin', '=', False),('state', 'not in', ['new']), ('sign_progress', '!=', '0/0'),  ('service_type_id', 'not in', [8])]">
+                        icon="fa-paper-plane" readonly="is_fleet_admin == False or state not in ['new'] or sign_progress != '0/0' or service_type_id not in [%(maintenance_request.fleet_service_type_multe)d]">
                     <span>Invia detrazione</span>
                 </button>
                 <button class="oe_stat_button btn-danger" type="object" name="cancelled"
                         icon="fa-trash" invisible="[('state', '=', 'cancelled')]">
                     <span>ANNULLA</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="to_processed" invisible="['|', ('state', 'not in', ['reported']),('service_type_id', '!=', 9)]">
+                <button class="oe_stat_button" type="object" name="to_processed" invisible="state not in ['reported'] or service_type_id != %(maintenance_request.fleet_service_type_sinistri)d">
                     <span>Processa</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="report_anomaly" invisible="['|', ('state', 'not in', ['new']),('service_type_id', '!=', 9)]">
+                <button class="oe_stat_button" type="object" name="report_anomaly" invisible="state not in ['new'] or service_type_id != %(maintenance_request.fleet_service_type_sinistri)d">
                     <span>Segnala sinistro</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="test_action" invisible="[('is_admin', '=', False)]" groups="Diritti.developer_group">
+                <button class="oe_stat_button" type="object" name="test_action" invisible="is_admin == False" groups="Diritti.developer_group">
                     <span>TEST AZIONE</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="['|','|', ('state', 'not in', ['reported','running','done']),('service_type_id', '!=', 8), ('signed_document', '!=', False)]" groups="Diritti.developer_group, Diritti.rop_group, fleet.fleet_group_manager">
+                <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="state not in ['reported','running','done'] or service_type_id != %(maintenance_request.fleet_service_type_multe)d or signed_document != False" groups="Diritti.developer_group, Diritti.rop_group, fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
                 </button>
             </xpath>
-            
-            
+
+
             <xpath expr="//header/field[@name='state']" position="replace">
-                <field name="state" widget="statusbar" invisible="[('service_type_id', 'in', [7,8,9])]" statusbar_visible="new,running,done,cancelled"/>
-                <field name="state" widget="statusbar" invisible="[('service_type_id', 'not in', [8])]" statusbar_visible="new,reported,done,cancelled"/>
-                <field name="state" widget="statusbar" invisible="[('service_type_id', 'not in', [7,9])]" statusbar_visible="new,reported,running,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="service_type_id in [%(maintenance_request.fleet_service_type_manutenzione_straordinaria)d,%(maintenance_request.fleet_service_type_multe)d,%(maintenance_request.fleet_service_type_sinistri)d]" statusbar_visible="new,running,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="service_type_id not in [%(maintenance_request.fleet_service_type_multe)d]" statusbar_visible="new,reported,done,cancelled"/>
+                <field name="state" widget="statusbar" invisible="service_type_id not in [%(maintenance_request.fleet_service_type_manutenzione_straordinaria)d,%(maintenance_request.fleet_service_type_sinistri)d]" statusbar_visible="new,reported,running,done,cancelled"/>
             </xpath>
             <xpath expr="//field[@name='deduction_ids']" position="replace">
                 <field name="deduction_ids" context="{'default_fleet_vehicle_log_service_id': id}" nolabel="1">
@@ -65,14 +64,14 @@
                         <field name="competence_contact_id" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="note" optional="show"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed" optional="show"/> <!-- Forse mostrare solo per le multe-->
-                        <field name="processed_by" optional="hide"/> 
-                        <field name="processed_on" optional="hide"/> 
+                        <field name="processed_by" optional="hide"/>
+                        <field name="processed_on" optional="hide"/>
                     </tree>
                 </field>
             </xpath>
         </field>
     </record>
-    
+
     <record id="fleet_vehicle_log_services_form_inherit_2" model="ir.ui.view">
         <field name="name">fleet.vehicle.log.services.form.inherit.2</field>
         <field name="model">fleet.vehicle.log.services</field>
@@ -82,7 +81,7 @@
                 <button name="close_anomaly" string="Set as completed" type="object" class="btn-secondary"
                         invisible="[
     '|',
-    '&amp;', ('service_type_id', 'in', [8, 9]), ('is_fleet_admin', '=', False),
+    '&amp;', ('service_type_id', 'in', ['%(maintenance_request.fleet_service_type_multe)d','%(maintenance_request.fleet_service_type_sinistri)d']), ('is_fleet_admin', '=', False),
     '|', 
     ('state', 'not in', ['new', 'running', 'reported']),
     ('category_service_type', '!=', 'anomaly')
