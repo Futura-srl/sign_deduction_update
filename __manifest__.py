@@ -14,4 +14,7 @@
         'view/fleet_vehicle_renter_view.xml',
         'view/deduction_deduction.xml',
     ],
+    'external_dependencies': {
+    'python': ['python-docx', 'docx2pdf', 'pdfkit', 'pydocx'],
+},
 }
