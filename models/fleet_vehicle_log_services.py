@@ -22,7 +22,7 @@ date_today = date.today()
 class FleetVehicleLogServices(models.Model):
     _inherit = 'fleet.vehicle.log.services'
 
-    state = fields.Selection([('new', 'Inserito'), ('reported', 'Segnalato'), ('running', 'Processato'), ('done', 'Completato'), ('cancelled', 'Annullato')], readonly=True, track_visibility='onchange')
+    state = fields.Selection([('new', 'Inserito'), ('reported', 'Segnalato'), ('running', 'Processato'), ('done', 'Completato'), ('cancelled', 'Annullato')], readonly=True, tracking=True)
     groups_ids = fields.Char(string='Groups of the User', compute='_compute_groups_admin', store=False)
     is_admin = fields.Boolean(compute='_compute_groups_admin', store=False)
     is_fleet_admin = fields.Boolean(compute='_compute_groups_fleet_admin', store=False)
