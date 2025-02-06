@@ -10,7 +10,7 @@
         # # Caricamento delle view,
         'view/fleet_vehicle_log_services.xml',
         'view/fleet_vehicle_log_contract.xml',
-        #'view/helpdesk_team_view.xml',
+        'view/helpdesk_team_view.xml',
         'view/fleet_vehicle_renter_view.xml',
         'view/deduction_deduction.xml',
     ],
