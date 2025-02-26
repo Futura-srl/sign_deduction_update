@@ -6,13 +6,13 @@
         <field name="inherit_id" ref="fleet_deduction_sign.anomaly_form_inherit"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="before">
-                <field name="groups_ids" invisible="0"/>
-                <field name="is_admin" invisible="0"/>
-                <field name="is_fleet_admin" invisible="0"/>
-                <field name="is_fleet_rop" invisible="0"/>
-                <field name="state" invisible="0"/>
-                <field name="service_type_id" invisible="0"/>
-                <field name="signed_document" invisible="0"/>
+                <field name="groups_ids" invisible="1"/>
+                <field name="is_admin" invisible="1"/>
+                <field name="is_fleet_admin" invisible="1"/>
+                <field name="is_fleet_rop" invisible="1"/>
+                <field name="state" invisible="1"/>
+                <field name="service_type_id" invisible="1"/>
+                <field name="signed_document" invisible="1"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>
