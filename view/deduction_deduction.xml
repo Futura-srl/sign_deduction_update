@@ -17,6 +17,8 @@
                 <field name="processed"/>
                 <field name="processed_by" invisible="1"/>
                 <field name="processed_on" invisible="1"/>
+                <field name="on_pwork" groups="Diritti.developer_group"/>
+                <field name="pwork_error" groups="Diritti.developer_group"/>
             </tree>
         </field>
     </record>

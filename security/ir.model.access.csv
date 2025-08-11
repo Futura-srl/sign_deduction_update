@@ -1,2 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-sign_deduction_update.access_fleet_renter,access_fleet_renter,sign_deduction_update.model_fleet_renter,,1,1,1,1
+access_fleet_vehicle_log_services_charged_wizard,access_fleet_vehicle_log_services_charged_wizard,model_fleet_vehicle_log_services_charged_wizard,fleet.fleet_group_manager,1,1,1,1

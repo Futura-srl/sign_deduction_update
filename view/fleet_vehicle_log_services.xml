@@ -13,6 +13,7 @@
                 <field name="state" invisible="1"/>
                 <field name="service_type_id" invisible="1"/>
                 <field name="signed_document" invisible="1"/>
+                <field name="to_be_charged" invisible="1"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -20,7 +21,7 @@
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Segna completato" type="object" class="btn-secondary"
                         invisible="service_type_id in [%(maintenance_request.fleet_service_type_multe)d, %(maintenance_request.fleet_service_type_sinistri)d] and is_fleet_admin == False
-                    and state not in ['new', 'reported', 'running'] or service_type_id in [%(maintenance_request.fleet_service_type_multe)d, %(maintenance_request.fleet_service_type_sinistri)d]"/>
+                    or state not in ['new', 'reported', 'running'] and service_type_id in [%(maintenance_request.fleet_service_type_multe)d, %(maintenance_request.fleet_service_type_sinistri)d]"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <!-- <button class="oe_stat_button" type="object" name="create_document_request_sign"
@@ -41,11 +42,18 @@
                 <button class="oe_stat_button" type="object" name="report_anomaly" invisible="state not in ['new'] or service_type_id != %(maintenance_request.fleet_service_type_sinistri)d">
                     <span>Segnala sinistro</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="test_action" invisible="is_admin == False" groups="Diritti.developer_group">
-                    <span>TEST AZIONE</span>
-                </button>
+
                 <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="state not in ['reported','running','done'] or service_type_id != %(maintenance_request.fleet_service_type_multe)d or signed_document != False" groups="Diritti.developer_group, Diritti.rop_group, fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="set_to_be_charged" invisible="to_be_charged != False">
+                    <span>Da addebitare</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="open_charged_wizard" invisible="to_be_charged != False">
+                    <span>Da non addebitare</span>
+                </button>
+                <button class="oe_stat_button" type="object" name="reset_to_be_charge" invisible="to_be_charged == False" groups="Diritti.developer_group">
+                    <span>Reset scelta addebito</span>
                 </button>
             </xpath>
 
@@ -71,6 +79,23 @@
             </xpath>
         </field>
     </record>
+
+
+    <!-- Creo una aggiunta per l' id fleet_service_with_deduction form view-->
+    <record model="ir.ui.view" id="fleet_vehicle_log_services_form_inherit_payment">
+        <field name="name">fleet.vehicle.log.services.form.inherit.payment</field>
+        <field name="model">fleet.vehicle.log.services</field>
+        <field name="inherit_id" ref="fleet_service_with_deduction.fleet_vehicle_log_services_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount']" position="after">
+                <field name="to_be_charged" readonly="1" decoration-bf='1' decoration-success="to_be_charged == 'yes'" decoration-danger="to_be_charged == 'no'"/>
+                <field name="motivation_of_charge" decoration-bf='1' invisible="to_be_charged == False or to_be_charged == 'yes'" readonly='1'/>
+            </xpath>
+        </field>
+    </record>
+
+
+
 
     <record id="fleet_vehicle_log_services_form_inherit_2" model="ir.ui.view">
         <field name="name">fleet.vehicle.log.services.form.inherit.2</field>

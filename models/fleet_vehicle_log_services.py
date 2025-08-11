@@ -31,6 +31,10 @@ class FleetVehicleLogServices(models.Model):
     replacement_end_date = fields.Datetime(string="Replacement Start Datetime")
     email_ids = fields.One2many('mail.mail', 'res_id', string='Emails', domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]")
     signed_document = fields.Boolean(default=False, readonly=True)
+    # Add select to chose if the service is to be charged or not
+    to_be_charged = fields.Selection([('yes', 'Yes'), ('no', 'No')], string='To be charged?', default=False, tracking=True, help="Select if the service is to be charged to the customer or not.")
+    motivation_of_charge = fields.Text(string='Motivation of charge', help="Insert the motivation of the charge if the service is to be charged or not to the driver.", tracking=True)
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -58,10 +62,7 @@ class FleetVehicleLogServices(models.Model):
             # Trova l'utente connesso
             user = self.env.user
             # Ottieni gli identificatori dei gruppi dell'utente connesso
-            if 17 in user.groups_id.ids:
-                record.is_fleet_admin = True
-            else:
-                record.is_fleet_admin = False
+            record.is_fleet_admin = user.has_group('fleet.fleet_group_manager')
                 
     @api.depends('is_fleet_rop')
     def _compute_groups_fleet_rop(self):
@@ -138,11 +139,11 @@ class FleetVehicleLogServices(models.Model):
             "[NOME]": self.purchaser_id.name,
             "[AZIENDA]": azienda,
             "[DATA]": date_today.strftime('%d/%m/%Y'),
-            "[DATA_EVENTO]": str(self.date.date().strftime('%d/%m/%Y')),
+            "[DATA_EVENTO]": str(self.date.strftime('%d/%m/%Y')),
             "[LUOGO]": self.city_id.name,
             "[TARGA]": self.vehicle_id.license_plate,
             "[IMPORTO]": str(importo_formattato),
-            "[NUMERO_VERBALE]": self.description + " del " + str(self.date.date().strftime('%d/%m/%Y')),
+            "[NUMERO_VERBALE]": self.description + " del " + str(self.date.strftime('%d/%m/%Y')),
             "[NUMERO_PROTOCOLLO]": str(self.id),
         }
     
@@ -783,8 +784,27 @@ class FleetVehicleLogServices(models.Model):
         _logger.info("TEST ACTION")
         self.check_interinale_a()
 
+    # Creo un metodo per aprire il wizard per decidere come mai non e` addebitabile
+    def open_charged_wizard(self):
+        # Creo un record del wizard
+        # Apro il wizard
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'fleet.vehicle.log.services.charged.wizard',
+            'name': 'Motivazione del mancato mancato addebito',
+            'view_mode': 'form',
+            'view_type': 'form',
+            'target': 'new',
+            'context': {'default_text': '', 'default_anomaly_id': self.id}
+        }
+
+    def set_to_be_charged(self):
+        self.to_be_charged = 'yes'
 
 
+    def reset_to_be_charge(self):
+        self.to_be_charged = False
+        self.motivation_of_charge = ''
 
 ##################
 #    DA FARE     #
