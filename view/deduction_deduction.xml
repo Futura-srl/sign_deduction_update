@@ -6,20 +6,53 @@
         <field name="name">deduction_deduction_views_tree_inherit</field>
         <field name="model">deduction.deduction</field>
         <field name="arch" type="xml">
-            <tree string="Deduction" editable="bottom">
-                <field name="date"/>
-                <field name="employee_id"/>
-                <field name="deduction_value"/>
-                <field name="competence_contact_id"/>
+            <tree string="Deduction">
+                <field name="date" readonly="1"/>
+                <field name="employee_id" readonly="1"/>
+                <field name="deduction_value" readonly="1"/>
+                <field name="competence_contact_id" readonly="1"/>
                 <field name="invoice"/>
                 <field name="note"/>
                 <field name="fleet_vehicle_log_service_id" readonly="1"/>
-                <field name="processed"/>
-                <field name="processed_by" invisible="1"/>
-                <field name="processed_on" invisible="1"/>
-                <field name="on_pwork" groups="Diritti.developer_group"/>
-                <field name="pwork_error" groups="Diritti.developer_group"/>
+                <field name="processed" readonly="1"/>
+                <field name="processed_by" readonly="1"/>
+                <field name="processed_on" readonly="1"/>
+                <field name="on_pwork" readonly="1"/>
+                <field name="response_txt" groups="Diritti.developer_group"/>
+                <field name="error" readonly="1"/>
             </tree>
+        </field>
+    </record>
+
+    <!-- Relativo alla visualizzazione del form -->
+    <record id="deduction_deduction_views_form_inherit" model="ir.ui.view">
+        <field name="name">deduction.deduction.views.form.inherit</field>
+        <field name="model">deduction.deduction</field>
+        <field name="arch" type="xml">
+            <form string="Deduction">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="employee_id"/>
+                            <field name="deduction_value"/>
+                            <field name="competence_contact_id"/>
+                            <field name="invoice"/>
+                            <field name="note"/>
+                        </group>
+                        <group>
+                            <field name="fleet_vehicle_log_service_id" readonly="1"/>
+                            <field name="processed" readonly="1"/>
+                            <field name="processed_by" readonly="1"/>
+                            <field name="processed_on" readonly="1"/>
+                            <field name="on_pwork" readonly="1"/>
+                            <field name="payload" readonly="1"/>
+                            <field name="response_txt" groups="Diritti.developer_group" readonly="1"/>
+                            <field name="error" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
         </field>
     </record>
 
@@ -47,13 +80,32 @@
     <record id="deduction_deduction" model="ir.actions.act_window">
         <field name="name">Deduction</field>
         <field name="res_model">deduction.deduction</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">tree,form</field>
     </record>
 
     <menuitem id="list_fleet_deduction_menu"
     name="Detrazioni"
     parent="fleet.menu_root"
     action="sign_deduction_update.deduction_deduction"/>
+
+<!--    Creo un'azione per la funzione action_upload_deduction_to_pwork -->
+    <record id="action_upload_deduction_to_pwork" model="ir.actions.server">
+        <field name="name">Upload Deduction to Pwork</field>
+        <field name="model_id" ref="model_deduction_deduction"/>
+        <field name="binding_model_id" ref="model_deduction_deduction"/>
+        <field name="state">code</field>
+        <field name="code">records.action_upload_deduction_to_pwork()</field>
+    </record>
+
+
+    <record id="action_deduction_processed" model="ir.actions.server">
+        <field name="name">Mark Deduction as Processed</field>
+        <field name="model_id" ref="model_deduction_deduction"/>
+        <field name="binding_model_id" ref="model_deduction_deduction"/>
+        <field name="state">code</field>
+        <field name="code">records.action_deduction_processed()</field>
+    </record>
+
 
     
 </odoo>
