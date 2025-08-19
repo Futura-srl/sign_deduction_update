@@ -77,6 +77,12 @@
                     </tree>
                 </field>
             </xpath>
+            <xpath expr="//field[@name='notes']" position="attributes">
+                <attribute name="required">service_type_id != %(maintenance_request.fleet_service_type_multe)d</attribute>
+            </xpath>
+            <xpath expr="//page[@name='deductions']" position="attributes">
+                <attribute name="readonly">is_fleet_rop == True</attribute>
+            </xpath>
         </field>
     </record>
 

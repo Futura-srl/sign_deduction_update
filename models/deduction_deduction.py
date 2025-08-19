@@ -19,6 +19,25 @@ class DeductionDeduction(models.Model):
     response_txt = fields.Text(string='Pwork Response', help="Response from Pwork after processing the deduction.")
     payload = fields.Text(string='Payload', help="The XML payload sent to Pwork.")
     error = fields.Boolean(default=False, help="Indicates if there was an error during processing.")
+    is_fleet_rop = fields.Boolean(string="Is Fleet ROP", compute="_compute_is_fleet_rop", help="Indicates if the deduction is related to a fleet ROP service.")
+
+
+    @api.depends('create_date')
+    def _compute_is_fleet_rop(self):
+        for record in self:
+            # Trova l'utente connesso
+            user = self.env.user
+            _logger.info(user)
+            _logger.info("Verifico se l'utente appartiene ai rop")
+            record.is_fleet_rop = user.has_group('Diritti.rop_group')
+            _logger.info("Stato del campo is_fleet_rop: %s", record.is_fleet_rop)
+            # Ottieni gli identificatori dei gruppi dell'utente connesso
+            if 171 in user.groups_id.ids or 117 in user.groups_id.ids:
+                record.is_fleet_rop = True
+                _logger.info("Utente appartiene al gruppo ROP o al gruppo di gestione dei veicoli")
+            else:
+                record.is_fleet_rop = False
+                _logger.info("Utente non appartiene al gruppo ROP o al gruppo di gestione dei veicoli")
     
 
     def action_deduction_processed(self):

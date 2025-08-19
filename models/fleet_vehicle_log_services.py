@@ -73,16 +73,22 @@ class FleetVehicleLogServices(models.Model):
             # Ottieni gli identificatori dei gruppi dell'utente connesso
             record.is_fleet_admin = user.has_group('fleet.fleet_group_manager')
 
-    @api.depends('is_fleet_rop')
+    @api.depends('create_date')
     def _compute_groups_fleet_rop(self):
         for record in self:
             # Trova l'utente connesso
             user = self.env.user
+            _logger.info(user)
+            _logger.info("Verifico se l'utente appartiene ai rop")
+            record.is_fleet_rop = user.has_group('Diritti.rop_group')
+            _logger.info("Stato del campo is_fleet_rop: %s", record.is_fleet_rop)
             # Ottieni gli identificatori dei gruppi dell'utente connesso
-            if 117 in user.groups_id.ids:
+            if 171 in user.groups_id.ids or 117 in user.groups_id.ids:
                 record.is_fleet_rop = True
+                _logger.info("Utente appartiene al gruppo ROP o al gruppo di gestione dei veicoli")
             else:
                 record.is_fleet_rop = False
+                _logger.info("Utente non appartiene al gruppo ROP o al gruppo di gestione dei veicoli")
 
     @api.depends('purchaser_id')
     def _compute_employee_interinale(self):
@@ -721,8 +727,7 @@ class FleetVehicleLogServices(models.Model):
             # Se è interinale e la responsabilità non è "Sconosciuta" o di "Terzi" procedo con l'invio della comunicazione
             # _logger.info(
             #     f"STAMPO I VALORI DI is_employee_external {is_employee_external}, interinale {interinale} E self.responsibility {self.responsibility}")
-            if is_employee_external == False and interinale != False and self.responsibility not in ['unnknown',
-                                                                                                     'third']:
+            if is_employee_external == False and interinale != False and self.responsibility not in ['unnknown', 'third']:
                 # Siccome il dipendente è attualmente interinale, bisognerà avvisare del sinistro l'interinale.
                 body_interinale = f"""<p>Buongiorno,<br />
                                             di seguito riepilogo sinistro</p><br /><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}<br /><b>Autista: </b>{self.purchaser_id.name}<br /><b>Responsabilità: </b>{responsibility}<br /></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b>Note: </b>{self.notes}</p><p><b><U>In allegato la documentazione attestante il fatto.</U></b></p><br /><br /><p>Futura</p>"""
