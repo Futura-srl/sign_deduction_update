@@ -46,13 +46,13 @@
                 <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="state not in ['reported','running','done'] or service_type_id != %(maintenance_request.fleet_service_type_multe)d or signed_document != False" groups="Diritti.developer_group, Diritti.rop_group, fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="set_to_be_charged" invisible="to_be_charged != False">
+                <button class="oe_stat_button" type="object" name="set_to_be_charged" invisible="to_be_charged != False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'">
                     <span>Da addebitare</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="open_charged_wizard" invisible="to_be_charged != False">
+                <button class="oe_stat_button" type="object" name="open_charged_wizard" invisible="to_be_charged != False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'">
                     <span>Da non addebitare</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="reset_to_be_charge" invisible="to_be_charged == False" groups="Diritti.developer_group">
+                <button class="oe_stat_button" type="object" name="reset_to_be_charge" invisible="to_be_charged == False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'" groups="Diritti.developer_group">
                     <span>Reset scelta addebito</span>
                 </button>
             </xpath>
@@ -88,8 +88,8 @@
         <field name="inherit_id" ref="fleet_service_with_deduction.fleet_vehicle_log_services_form_inherit"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount']" position="after">
-                <field name="to_be_charged" readonly="1" decoration-bf='1' decoration-success="to_be_charged == 'yes'" decoration-danger="to_be_charged == 'no'"/>
-                <field name="motivation_of_charge" decoration-bf='1' invisible="to_be_charged == False or to_be_charged == 'yes'" readonly='1'/>
+                <field name="to_be_charged" readonly="1" invisible="service_type_id != %(maintenance_request.fleet_service_type_multe)d" decoration-bf="1" decoration-success="to_be_charged == 'yes'" decoration-danger="to_be_charged == 'no'"/>
+                <field name="motivation_of_charge" decoration-bf="1" invisible="service_type_id != %(maintenance_request.fleet_service_type_multe)d" readonly='1'/>
             </xpath>
         </field>
     </record>
