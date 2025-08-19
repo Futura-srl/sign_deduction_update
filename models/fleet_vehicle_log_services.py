@@ -34,6 +34,9 @@ class FleetVehicleLogServices(models.Model):
     # Add select to chose if the service is to be charged or not
     to_be_charged = fields.Selection([('yes', 'Yes'), ('no', 'No')], string='To be charged?', default=False, tracking=True, help="Select if the service is to be charged to the customer or not.")
     motivation_of_charge = fields.Text(string='Motivation of charge', help="Insert the motivation of the charge if the service is to be charged or not to the driver.", tracking=True)
+    employee_interinale = fields.Boolean(string="Employee Interinale", compute="_compute_employee_interinale", store=True, help="Check if the employee is an interinale.")
+    email_interinalle = fields.Boolean(string="Email Interinale", help="Check if the employee is an interinale and has an email.")
+
 
 
     @api.model_create_multi
@@ -75,6 +78,18 @@ class FleetVehicleLogServices(models.Model):
             else:
                 record.is_fleet_rop = False
 
+    @api.depends('purchaser_id')
+    def _compute_employee_interinale(self):
+        for record in self:
+            # Trovo tutti i dipendenti associati al partner
+            employees = self.env['hr.employee'].search([('address_home_id', '=', record.purchaser_id.id), ('active', '=', True)])
+            for employee in employees:
+                # Controllo se il dipendente oggi ha un contratto attivo
+                active_contract = self.env['hr.contract'].search([('employee_id', '=', employee.id), ('date_start', '<=', date_today), '|', ('date_end', '>=', date_today), ('date_end', '=', False)])
+                if active_contract:
+                    # Se ho trovato un contratto attivo, imposto il campo a True
+                    record.employee_interinale = True
+                    break
 
     
    #################### 
@@ -472,6 +487,8 @@ class FleetVehicleLogServices(models.Model):
     def check_interinale_a(self):
         contacts = set()
         contacts_str = ""
+        if self.purchaser_id.is_esterno:
+            return False
         employees = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id), '|',('active', '=', True), ('active', '=', False)])
         for employee in employees:
             for contract_id in employee['contract_ids']:
@@ -622,6 +639,8 @@ class FleetVehicleLogServices(models.Model):
     # Segnalazione sinistro
     # Per procedere devo controllare che il sinistro sia stato gestito (modulo dichiarazione danno presente)
     def report_anomaly(self):
+        # Controllo se il dipendente e` un esterno
+        is_employee_external = self.purchaser_id.is_esterno
         document = self.check_documents()
         if document == True:
             # Recupero i rop che dovranno ricevere anche loro la mail
@@ -677,11 +696,10 @@ class FleetVehicleLogServices(models.Model):
             # Recupero l'interinale
             interinale = self.check_interinale_a()
             # Se è interinale e la responsabilità non è "Sconosciuta" o di "Terzi" procedo con l'invio della comunicazione
-            if interinale != "" and self.responsibility not in ['unnknown','third']:
+            if not is_employee_external and interinale != "" and self.responsibility not in ['unnknown','third']:
                 # Siccome il dipendente è attualmente interinale, bisognerà avvisare del sinistro l'interinale.
-                body_interinale = f"""<p>Alla cortese attenzione del Responsabile Risorse Umane,</br>di seguito riepilogo sinistro:</br></br><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Veicolo: </b>{self.vehicle_id.license_plate}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></br></br><p><b>Danni mezzo proprio ed eventuali parti coinvolte:</b><ul>{list_damages}</ul></p>
-    <p><U>Potete procedere alla trattenuta della franchigia pari a € {importo_formattato},eventuali rateizzazioni verranno comunicate come di consueto a mezzo Timesheet</U></p>
-    <p><b>Vi ricordo come da regolamento aziendale firmato dalla risorsa che le trattenute potranno avvenire anche in deroga ai limiti legali imposti.</b></p><br><p>In allegato la documentazione attestante il fatto.</p></br><p>Estratto regolamento aziendale: "Avuto riguardo alla non operabilità dei presupposti legali ex art. 1246 c.c. e art. 545 c.p.c. presupponenti ai fini di una compensazione tecnica, l’autonomia dei rapporti cui si riferiscono i contrapposti crediti delle parti e non operanti quando essi nascano dal medesimo rapporto, comportando soltanto un mero accertamento contabile di dare e avere, la relativa compensazione “tecnica” potrà avvenire anche in deroga ai limiti legali imposti e, dunque, anche in un’unica soluzione ed a prescindere dalle trattenute in corso per eventuali cessioni di credito e/o di pignoramento dello stipendio.</p></br></br><p>Futura</p>"""
+                body_interinale = f"""<p>Buongiorno,<br />
+                                            di seguito riepilogo sinistro</p><br /><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}<br /><b>Autista: </b>{self.purchaser_id.name}<br /><b>Responsabilità: </b>{responsibility}<br /></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b>Note: </b>{self.notes}</p><p><b><U>In allegato la documentazione attestante il fatto.</U></b></p><br /><br /><p>Futura</p>"""
                 _logger.info(body_interinale)
                 mail_values = {
                     'subject': f'Sinistro rif.int. {str(self.id)}',
@@ -695,48 +713,105 @@ class FleetVehicleLogServices(models.Model):
                     'attachment_ids': attach,  # Aggiungi l'allegato all'email
                 }
         
-                mail = self.env['mail.mail'].sudo().create(mail_values)
-                mail.send()
+                mail_interinale = self.env['mail.mail'].sudo().create(mail_values)
+
     
-            
-            # Comunicazione al locatore dei mezzi
+            # Controllo se il mezzo ha come owner un'azienda interna
+            # Comunicazione al locatore dei mezzi se il mezzo non appartiene ad un'azienda interna e ha un locatore, altrimenti avviso con un errore
             # Recupero l'ultimo contratto di gli indirizzi mail del locatore
             vehicles = self.env['fleet.vehicle'].search_read([('id', '=', self.vehicle_id['id'])])
             email_to = ""
+            company = self.env['res.company'].search_read([()], ['partner_id'])
+            list_company_partner = []
+            for company_partner in company:
+                _logger.info(company_partner)
+                list_company_partner.append(company_partner['partner_id'])
             for vehicle in vehicles:
-                contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46,55])], order='id desc', limit=1)
-                for contract in contracts:
-                    _logger.info(contract['insurer_id'][0])
-                    _logger.info(contract['locator_location'])
-                    if contract['locator_location'] != False:
-                        
-                        _logger.info(contract['locator_location'][0])
-                        # controllo se l'id recuperato è presente in fleet.locator
-                        is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
+                # Controllo se il mezzo non ha come owner almeno una delle aziende interne
+                is_rent = self.env['fleet.vehicle'].sudo().search([('id', '=', vehicle['id']), ('owner_id', 'not in', list_company_partner)])
+                if is_rent:
+                    # Cerco i contratti attivi di noleggio, noleggio scorta e non contrattualizzato
+                    contracts = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', 'in', [11,46,85])], order='id desc', limit=1)
+                    # Se non esistono contratti attivi avviso
+                    if not contracts:
+                        raise ValidationError(_("Non è stato possibile recuperare un contratto attivo di noleggio / noleggio scorta / non contrattualizzato."))
+                    for contract in contracts:
+                        _logger.info(contract['insurer_id'][0])
+                        _logger.info(contract['locator_location'])
+                        if contract['locator_location'] != False:
 
-                    if 'is_locator' in locals():    
-                        for record in is_locator:
-                            _logger.info(record['email_list'])
-                            email_to = record['email_list']
-            if email_to != "":
-                body_locatore = f"""<p>Buongiorno,</br>
-        di seguito riepilogo sinistro</p></br><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
-        In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
-                _logger.info(body_locatore)
-                mail_values = {
-                    'subject': f'Sinistro rif.int. {str(self.id)}',
-                    'email_from': 'catchall@futurasl.com',
-                    'email_to': email_to,
-                    'email_cc': 'catchall@futurasl.com',
-                    'reply_to': 'catchall@futurasl.com',                    
-                    'model': 'fleet.vehicle.log.services',
-                    'res_id': self.id,
-                    'body_html': body_locatore,
-                    'attachment_ids': attach,  # Aggiungi l'allegato all'email
-                }
-                
-                mail = self.env['mail.mail'].sudo().create(mail_values)
-                mail.send()
+                            _logger.info(contract['locator_location'][0])
+                            # controllo se l'id recuperato è presente in fleet.locator
+                            is_locator = self.env['fleet.renter'].search_read([('res_partner_id', '=', contract['insurer_id'][0]), ('res_city_id.name', '=', contract['locator_location'][1])])
+                        else:
+                            raise ValidationError(_("Non è stato possibile recuperare il locatore del mezzo."))
+                        if 'is_locator' in locals():
+                            for record in is_locator:
+                                _logger.info(record['email_list'])
+                                email_to = record['email_list']
+                        if email_to != "":
+                            body_locatore = f"""<p>Buongiorno,</br>
+                    di seguito riepilogo sinistro</p></br><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}</br><b>Autista: </b>{self.purchaser_id.name}</br><b>Responsabilità: </b>{responsibility}</br></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
+                    In allegato la documentazione attestante il fatto</U></b></p></br></br><p>Futura</p>"""
+                            _logger.info(body_locatore)
+                            mail_values = {
+                                'subject': f'Sinistro rif.int. {str(self.id)}',
+                                'email_from': 'catchall@futurasl.com',
+                                'email_to': email_to,
+                                'email_cc': 'catchall@futurasl.com',
+                                'reply_to': 'catchall@futurasl.com',
+                                'model': 'fleet.vehicle.log.services',
+                                'res_id': self.id,
+                                'body_html': body_locatore,
+                                'attachment_ids': attach,  # Aggiungi l'allegato all'email
+                            }
+
+                            mail_locatore = self.env['mail.mail'].sudo().create(mail_values)
+                        else:
+                            raise ValidationError(_("Non è stato possibile recuperare l'indirizzo email del locatore del mezzo."))
+                else:
+                    # Se il mezzo appartiene ad un'azienda interna invio la mail all'assicurazione
+                    # Controllo che il mezzo abbia un contratto di proprieta` attivo
+                    contracts_property = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', '=', 86)], order='id desc', limit=1)
+                    if not contracts_property:
+                        raise ValidationError(_("Non è stato possibile recuperare un contratto di proprieta` attivo."))
+                    # Cerco il contratto assicurativo attivo con type 13
+                    contracts_assurance = self.env['fleet.vehicle.log.contract'].search_read([('vehicle_id', '=', vehicle['id']), ('cost_subtype_id', '=', 13)], order='id desc', limit=1)
+
+                    # recupero tutti gli indirizza mail associati al partner dell'assicurazione
+                    for contract in contracts_assurance:
+                        _logger.info(contract['insurer_id'][0])
+                        _logger.info(contract['locator_location'])
+                        if contract['insurer_id'] != False:
+                            is_insurer = self.env['res.partner'].search_read([('id', '=', contract['insurer_id'][0])], ['email'])
+                            if is_insurer != []:
+                                email_to_assurance = is_insurer[0]['email']
+                            else:
+                                raise ValidationError(_("Non è stato possibile recuperare l'indirizzo email dell'assicurazione del mezzo."))
+                        else:
+                            raise ValidationError(_("Non è stato possibile recuperare l'assicurazione del mezzo."))
+                    if email_to_assurance:
+                        body_assurance = f"""<p>Buongiorno,<br />
+                                            di seguito riepilogo sinistro</p><br /><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}<br /><b>Autista: </b>{self.purchaser_id.name}<br /><b>Responsabilità: </b>{responsibility}<br /></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b>Note: </b>{self.notes}</p><p><b><U>In allegato la documentazione attestante il fatto</U></b></p><br /><br /><p>Futura</p>"""
+                        _logger.info(body_locatore)
+                        mail_values = {
+                            'subject': f'Sinistro rif.int. {str(self.id)}',
+                            'email_from': 'catchall@futurasl.com',
+                            'email_to': email_to,
+                            'email_cc': 'catchall@futurasl.com',
+                            'reply_to': 'catchall@futurasl.com',
+                            'model': 'fleet.vehicle.log.services',
+                            'res_id': self.id,
+                            'body_html': body_locatore,
+                            'attachment_ids': attach,  # Aggiungi l'allegato all'email
+                        }
+
+                        mail_assurance = self.env['mail.mail'].sudo().create(mail_values)
+
+
+
+                    _logger.info("Mail inviata all'assicurazione")
+
     
             # Scrivo nel chatter cosa ha appena fatto l'utente
             str_foto = ""
@@ -752,12 +827,44 @@ class FleetVehicleLogServices(models.Model):
 
             
             partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
-            if interinale == "" and email_to != "":
+            # mail inviata al locatore
+            # mail non inviata all'interinale e all'assicurazione
+            if interinale == "" and email_to != "" and email_to_assurance == "":
+                mail_locatore.send()
                 self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
-            elif interinale != "" and email_to == "":
+            # mail inviata all'interinale
+            # mail non inviata al locatore e all'assicurazione
+            elif interinale != "" and email_to == "" and email_to_assurance == "":
+                mail_interinale.send()
                 self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail all'interinale:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
-            elif interinale != "" and email_to != "":
+            # mail inviata all'interinale e al locatore
+            # mail non inviata all'assicurazione
+            elif interinale != "" and email_to != "" and email_to_assurance == "":
+                mail_locatore.send()
+                mail_interinale.send()
                 self.env['mail.message'].create({'model': 'fleet.vehicle.log.services','res_id': self.id,'author_id': partner_id,'body': f"<p>Ho appena inviato la seguente mail all'interinale e al locatore del mezzo:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
+            # mail inviata all'assicurazione
+            # mail non inviata all'interinale e al locatore
+            elif interinale == "" and email_to == "" and email_to_assurance != "":
+                mail_assurance.send()
+                self.env['mail.message'].create(
+                    {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
+                     'body': f"<p>Ho appena inviato la seguente mail all'assicuratore:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
+            # mail inviata all'interinale e all'assicurazione
+            # mail non inviata al locatore
+            elif interinale != "" and email_to == "" and email_to_assurance != "":
+                self.env['mail.message'].create(
+                    {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
+                     'body': f"<p>Ho appena inviato la seguente mail all'interinale e all'assicuratore:</p><p>Segnalazione apertura sinistro</p>{str_foto}{str_cai}{str_denuncia}"})
+                mail_interinale.send()
+                mail_assurance.send()
+            # nessuna mail inviata
+            else:
+                raise ValidationError(_("Non è stata inviata alcuna segnalazione."))
+            if is_employee_external:
+                self.env['mail.message'].create(
+                    {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
+                     'body': f"<p>Essendo un dipendente esterno, bisogna gestirlo manualmente.</p>"})
             self[0].state = 'reported'
     
             # Una volta cambiato lo stato in "Segnalato" devo cancellare eventuali attività
@@ -765,9 +872,102 @@ class FleetVehicleLogServices(models.Model):
 
 
 
+
+    # Invio il totale dell'addebito e le relative informazioni all'interinale
+    # Creo un eventuale contestazione
+    # Passo allo stato "Processed"
     def to_processed(self):
+        # Controllo se il dipendente e` un esterno
+        is_employee_external = self.purchaser_id.is_esterno
         have_deduction = self.env['deduction.deduction'].search_read([('fleet_vehicle_log_service_id', '=', self.id)])
         if have_deduction != []:
+            document = self.check_documents()
+            if document == True:
+                # Recupero i rop che dovranno ricevere anche loro la mail
+                _logger.info("AAAAAAAAAAAAA")
+                _logger.info(self.trip_id['id'])
+                organization_id = self.env['gtms.trip'].search_read([('id', '=', self.trip_id['id'])],
+                                                                    ['organization_id'])
+                rop_ids = self.env['helpdesk.team'].search_read(
+                    [('organization_id', '=', organization_id[0]['organization_id'][1])], ['message_partner_ids'])
+
+                # Visto che tutti i documenti obbligatori sono stati allegati è possibile procedere con la segnalazione del sinistro al fornitore dei mezzi e ad eventuale interinale
+
+                # Recupero l'importo che dovrà essere addebitato
+                deduction_ids = self.deduction_ids.ids
+                total_import = 0.0
+                for deduction_id in deduction_ids:
+                    total_import += self.env['deduction.deduction'].search(
+                        [('id', '=', deduction_id), ('date', '!=', False)]).deduction_value
+                _logger.info("importo totale %s", total_import)
+                importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
+
+                # Recupero il valore della responsabilità
+                if self.responsibility == 'byself':
+                    responsibility = "Propria"
+                elif self.responsibility == 'byself_third':
+                    responsibility = "Propia e di terzi"
+                elif self.responsibility == 'third':
+                    responsibility = "Terza"
+                elif self.responsibility == 'unknown':
+                    responsibility = "Sconosciuta"
+
+                # Recupero dell'allegato
+                attachment_id = self.env['documents.document'].search_read([('tag_ids', '=', 43), ('service_id.id', '=', self.id)], ['attachment_id'])[0]['attachment_id'][0]
+                attachment_ids = self.env['documents.document'].search_read(
+                    [('tag_ids', 'in', [43, 59, 57, 58]), ('service_id.id', '=', self.id)], [
+                        'attachment_id'])  # Gli allegati da inviare sono: Modulo dichiarazione danni, Foto sinistro, CAI, Denuncia polizia
+                attach = []
+                for attachments in attachment_ids:
+                    _logger.info(attachments)
+                    attach.append((4, attachments['attachment_id'][0]))
+                # attach = self.env['documents.document'].search_read([('tag_ids', '=', 43),('service_id.id', '=', self.id)], ['attachment_id'])[0]
+                # _logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                _logger.info(attachment_id)
+                _logger.info(attach)
+                # _logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+                # Recupero lista danni
+                damages = self.env['reparation.reparation'].search_read(
+                    [('fleet_vehicle_log_service_id', '=', self.id)])
+                list_damages = ""
+                for damage in damages:
+                    _logger.info(damage['damage_type_id'][1])
+                    list_damages += "<li>" + str(damage['damage_type_id'][1]) + "</li>"
+                # Recupero l'interinale
+                interinale = self.check_interinale_a()
+                # Se è interinale e la responsabilità non è "Sconosciuta" o di "Terzi" procedo con l'invio della comunicazione
+                if not is_employee_external and interinale != "" and self.responsibility not in ['unnknown', 'third']:
+                    # Siccome il dipendente è attualmente interinale, bisognerà avvisare del sinistro l'interinale.
+                    body_interinale = f"""<p>Alla cortese attenzione del Responsabile Risorse Umane,<br></br>di seguito riepilogo sinistro: <br></br><br></br><b>Data/Ora:</b> {self.date.strftime('%d/%m/%Y %H:%M')} <br></br><b>Veicolo:</b> {self.vehicle_id.license_plate}<br></br><b>Autista:</b> {self.purchaser_id.name}<br></br><b>Responsabilità:</b> {responsibility}<br></br><br></br><br></br><p><b>Danni mezzo proprio ed eventuali parti coinvolte:</b><ul>{list_damages}</ul></p>
+                <p><U>Potete procedere alla trattenuta della franchigia pari a € {importo_formattato},eventuali rateizzazioni verranno comunicate come di consueto a mezzo Timesheet</U></p>
+                <p><b>Vi ricordo come da regolamento aziendale firmato dalla risorsa che le trattenute potranno avvenire anche in deroga ai limiti legali imposti.</b></p><br><p>In allegato la documentazione attestante il fatto.</p><br></br><p>Estratto regolamento aziendale: "Avuto riguardo alla non operabilità dei presupposti legali ex art. 1246 c.c. e art. 545 c.p.c. presupponenti ai fini di una compensazione tecnica, l’autonomia dei rapporti cui si riferiscono i contrapposti crediti delle parti e non operanti quando essi nascano dal medesimo rapporto, comportando soltanto un mero accertamento contabile di dare e avere, la relativa compensazione “tecnica” potrà avvenire anche in deroga ai limiti legali imposti e, dunque, anche in un’unica soluzione ed a prescindere dalle trattenute in corso per eventuali cessioni di credito e/o di pignoramento dello stipendio.</p><br></br><br></br><p>Futura</p>"""
+                    _logger.info(body_interinale)
+                    mail_values = {
+                        'subject': f'Sinistro rif.int. {str(self.id)}',
+                        'email_from': 'catchall@futurasl.com',
+                        'email_to': interinale,
+                        'email_cc': 'catchall@futurasl.com',
+                        'reply_to': 'catchall@futurasl.com',
+                        'model': 'fleet.vehicle.log.services',
+                        'res_id': self.id,
+                        'body_html': body_interinale,
+                        'attachment_ids': attach,  # Aggiungi l'allegato all'email
+                    }
+
+                    mail = self.env['mail.mail'].sudo().create(mail_values)
+                    mail.send()
+                    partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
+                    self.env['mail.message'].create(
+                        {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
+                         'body': f"<p>Ho appena inviato la seguente mail all'interinale:</p><p>Comunicazione totale degli importi da trattenere</p>"})
+
+            ###########
+            ###########
+            # VEDERE CON ROBY SE DOBBIAMO APRIRE SUBITO UNA CONTESTAZIONE AL DIPENDENTE (SE INTERNO)
+            # if interinale == "" and self.responsibility not in ['unnknown', 'third']:
+
+            # Passo allo stato "Processed"
             self[0].state = 'running'
         else:
             raise ValidationError(_("Non ci sono addebiti al dipendente associati all'anomalia."))
@@ -791,7 +991,7 @@ class FleetVehicleLogServices(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'fleet.vehicle.log.services.charged.wizard',
-            'name': 'Motivazione del mancato mancato addebito',
+            'name': 'Motivazione del mancato addebito',
             'view_mode': 'form',
             'view_type': 'form',
             'target': 'new',
