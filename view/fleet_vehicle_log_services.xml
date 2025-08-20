@@ -52,7 +52,7 @@
                 <button class="oe_stat_button" type="object" name="open_charged_wizard" invisible="to_be_charged != False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'">
                     <span>Da non addebitare</span>
                 </button>
-                <button class="oe_stat_button" type="object" name="reset_to_be_charge" invisible="to_be_charged == False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'" groups="Diritti.developer_group">
+                <button class="oe_stat_button" type="object" name="reset_to_be_charge" invisible="to_be_charged == False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'" groups="Diritti.developer_group, fleet.fleet_group_manager">
                     <span>Reset scelta addebito</span>
                 </button>
             </xpath>
