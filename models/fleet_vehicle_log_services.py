@@ -432,6 +432,8 @@ class FleetVehicleLogServices(models.Model):
                  'body': "<p>Ho appena inviato la seguente mail all'interinale:</p><p>Copia del verbale</p>"})
 
     def create_document_request_sign(self):
+        if self.motivation_of_charge == False:
+            raise ValidationError(_("Non è stata inserita alcuna motivazione di addebito."))
         self.check_data()
         template_id, attachment_for_rop_id = self.add_template_for_sign()
         _logger.info(template_id)

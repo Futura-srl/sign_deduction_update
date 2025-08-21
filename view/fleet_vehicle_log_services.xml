@@ -29,7 +29,8 @@
                     <span>Invia detrazione</span>
                 </button> -->
                 <button class="oe_stat_button" type="object" name="create_document_request_sign"
-                        icon="fa-paper-plane" readonly="is_fleet_admin == False or state not in ['new'] or sign_progress != '0/0' or service_type_id not in [%(maintenance_request.fleet_service_type_multe)d]">
+                        icon="fa-paper-plane" readonly="is_fleet_admin == False or state not in ['new'] or sign_progress != '0/0' or service_type_id not in [%(maintenance_request.fleet_service_type_multe)d]"
+                        invisible="to_be_charged == False">
                     <span>Invia detrazione</span>
                 </button>
                 <button class="oe_stat_button btn-danger" type="object" name="cancelled"
