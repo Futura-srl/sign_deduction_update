@@ -43,7 +43,7 @@
                     <span>Segnala sinistro</span>
                 </button>
 
-                <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="state not in ['reported','running','done'] or service_type_id != %(maintenance_request.fleet_service_type_multe)d or signed_document != False" groups="Diritti.developer_group, Diritti.rop_group, fleet.fleet_group_manager">
+                <button class="oe_stat_button" type="object" name="confirm_signed_document" invisible="state not in ['reported','running','done'] or service_type_id != %(maintenance_request.fleet_service_type_multe)d or signed_document != False" groups="Diritti.developer_group,Diritti.rop_group,fleet.fleet_group_manager">
                     <span>Documento Firmato</span>
                 </button>
                 <button class="oe_stat_button" type="object" name="set_to_be_charged" invisible="to_be_charged != False or service_type_id != %(maintenance_request.fleet_service_type_multe)d or state != 'new'">

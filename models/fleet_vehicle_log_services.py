@@ -436,7 +436,7 @@ class FleetVehicleLogServices(models.Model):
         template_id, attachment_for_rop_id = self.add_template_for_sign()
         _logger.info(template_id)
         reference_name = str(self.id) + " " + str(self.service_type_id.name) + " " + str(self.description)
-        sign_request = self.env['sign.request'].with_context(no_sign_mail=True).create({
+        sign_request = self.env['sign.request'].with_user(2).with_context(no_sign_mail=True).create({
             'anomaly_id': self.id,
             'reference': reference_name,
             'request_item_ids': [(0, 0, {
