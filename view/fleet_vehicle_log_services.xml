@@ -112,7 +112,7 @@
             <xpath expr="//button[@name='close_anomaly']" position="replace">
                 <button name="close_anomaly" string="Set as completed" type="object" class="btn-secondary"
                         invisible="[
-    '|',
+    '|',l
     '&amp;', ('service_type_id', 'in', ['%(maintenance_request.fleet_service_type_multe)d','%(maintenance_request.fleet_service_type_sinistri)d']), ('is_fleet_admin', '=', False),
     '|', 
     ('state', 'not in', ['new', 'running', 'reported']),

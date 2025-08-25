@@ -432,7 +432,7 @@ class FleetVehicleLogServices(models.Model):
                  'body': "<p>Ho appena inviato la seguente mail all'interinale:</p><p>Copia del verbale</p>"})
 
     def create_document_request_sign(self):
-        if self.motivation_of_charge == False:
+        if self.to_be_charged == False:
             raise ValidationError(_("Non è stata inserita alcuna motivazione di addebito."))
         self.check_data()
         template_id, attachment_for_rop_id = self.add_template_for_sign()
@@ -796,7 +796,7 @@ class FleetVehicleLogServices(models.Model):
                                 _logger.info(record['email_list'])
                                 email_to = record['email_list']
                         if email_to != "":
-                            body_locatore = f"""<p>Buongiorno,</br>
+                            body_locatore = f"""<p>Buongiorno,<br />
                     di seguito riepilogo sinistro</p><br /><p><b>Data/Ora: </b>{self.date.strftime('%d/%m/%Y %H:%M')}<br /><b>Autista: </b>{self.purchaser_id.name}<br /><b>Responsabilità: </b>{responsibility}<br /></p><p><b>Danni mezzo proprio:</b><ul>{list_damages}</ul></p><p><b><U>Per questo sinistro ho bisogno di ricevere quantificazione del danno entro 5 giorni lavorativi dalla presente, oltre questo termine eventuali addebiti verranno respinti .
                     In allegato la documentazione attestante il fatto</U></b></p><br /><br /><p>Futura</p>"""
                             _logger.info(body_locatore)
