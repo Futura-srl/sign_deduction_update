@@ -44,7 +44,7 @@ class DeductionDeduction(models.Model):
         for record in self:
             if not record.processed:
                 record.processed = True
-                record.processed_by = record.env.user.name
+                record.processed_by = record.env.user
                 record.processed_on = fields.Datetime.now()
             else:
                 record.processed = False
