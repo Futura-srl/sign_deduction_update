@@ -42,8 +42,6 @@ class DeductionDeduction(models.Model):
 
     def action_deduction_processed(self):
         for record in self:
-            if not record.employee_id.is_company:
-                raise UserError(_("The employee must not be a company to process the deduction. Please use the action upload deduction to pwork method instead."))
             if not record.processed:
                 record.processed = True
                 record.processed_by = record.env.user.name
@@ -83,8 +81,8 @@ class DeductionDeduction(models.Model):
 
     def _get_access_data(self):
         config_obj = self.env['ir.config_parameter']
-        pwork_cod_azienda = config_obj.sudo().get_param('pwork_cod_azienda')
-        pwork_token = config_obj.sudo().get_param('pwork_token')
+        pwork_cod_azienda = config_obj.sudo().get_param('export_hours_to_pwork.pwork_cod_azienda')
+        pwork_token = config_obj.sudo().get_param('export_hours_to_pwork.pwork_token')
         return config_obj, pwork_cod_azienda, pwork_token
 
     def setTM_Voce(self):
