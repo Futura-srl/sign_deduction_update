@@ -67,9 +67,6 @@ class DeductionDeduction(models.Model):
                     if response['ckResponse']['Esito'] == 2:
                         record.on_pwork = True
                         record.error = False
-                        record.processed = True
-                        record.processed_by = self.env.user
-                        record.processed_on =  datetime.now()
                         _logger.info(f"Deduction for employee {record.employee_id.name} successfully uploaded to Pwork.")
                     else:
                         record.error = True

@@ -327,7 +327,7 @@ class FleetVehicleLogServices(models.Model):
         _logger.info("importo totale %s", total_import)
         importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
         if self.deduction_point > 0:
-            body_interinale = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore (data Evento) si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
+            body_interinale = f"""<p>Buongiorno,<br />in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore (data Evento) si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
 <p><b>Qualora la contravvenzione comporti la decurtazione di Punti vi chiediamo entro 5 giorni di rispondere allegando alla presente:</b>
 <ul>
     <li>Copia fronte e retro della patente sulla stessa facciata con scritto di proprio pugno dall’autista la seguente frase 'Io sottoscritto {self.purchaser_id.name} nato a (paese e provincia di nascita) residente a (paese e provincia di residenza) in via (via) dichiaro che la copia del presente documento (indicare tipo documento) n° (numero documento) è conforme all'originale in mio possesso. (data e firma leggibile)'.</li>
@@ -336,10 +336,10 @@ class FleetVehicleLogServices(models.Model):
 <p><b>Vi chiedo di procedere al rilascio della vostra contestazione ed operare la relativa trattenuta dell’importo {importo_formattato}</b> in base a quanto vi verrà quantificato nel Timesheet come di consueto, da sommarsi qualora la contravvenzione preveda la decurtazione di punti e la risorsa non intenda comunicare i propri dati ulteriori 220,00€ a fronte della sanzione che riceveremo per la mancata comunicazione dei dati del conducente all’ente accertatore.</p>
 <p>Vi informiamo che è stata inoltrata la contestazione dell’evento da firmare per presa visione alla risorsa all’indirizzo (indirizzo mail dipendente).</p>
 <p>Per eventuali contestazioni vi chiediamo di rispondere sempre a questa mail.</p>
-</br></br>
+<br /><br />
 <p>Futura</p>"""
 
-            body_employee = f'''<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
+            body_employee = f'''<p>Buongiorno,<br />in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti {self.deduction_point}.</p>
 <p><b>Qualora la contravvenzione comporti la decurtazione di Punti vi chiediamo entro 5 giorni di rispondere allegando alla presente:</b>
 <ul>
     <li>Copia fronte e retro della patente sulla stessa facciata con scritto di proprio pugno dall’autista la seguente frase 'Io sottoscritto {self.purchaser_id.name} nato a (paese e provincia di nascita) residente a (paese e provincia di residenza) in via (via) dichiaro che la copia del presente documento (indicare tipo documento) n° (numero documento) è conforme all'originale in mio possesso. (data e firma leggibile)'.</li>
@@ -348,25 +348,25 @@ class FleetVehicleLogServices(models.Model):
 <p>Al presente verbale saranno da sommarsi qualora la contravvenzione preveda la decurtazione di punti e Lei non intenda comunicare i propri dati ulteriori 220,00€ a fronte della sanzione che riceveremo per la mancata comunicazione dei dati del conducente all’ente accertatore.</p>
 <p>Riceverà ulteriore mail con un link che riporterà alla contestazione da firmare per presa visione, tale firma non esclude l’eventuale addebito</p>
 <p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
-</br></br>
+<br /><br />
 <p>Futura</p>'''
-            body_rop = f"""<p>Buongiorno,</br>in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti.</p>
-</br>
+            body_rop = f"""<p>Buongiorno,<br />in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione comporta la decurtazione di punti.</p>
+<br />
 <p>Futura</p>"""
         else:
-            body_employee = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
+            body_employee = f"""<p>Buongiorno,<br />in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di Vostra competenza in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
 <p>Riceverà ulteriore mail con un link che riporterà alla contestazione da firmare per presa visione, tale firma non esclude l’eventuale addebito</p>
 <p>Per eventuali contestazioni vi chiediamo di far riferimento al vostro responsabile di sede.</p>
-</br>
+<br />
 <p>Futura</p>"""
-            body_rop = f"""<p>Buongiorno,</br>in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
-</br>
+            body_rop = f"""<p>Buongiorno,<br />in allegato la documentazione da far firmare all'autista relativa alla contravvenzione del codice della strada n° {self.description} avvenuta in data/ore {self.date} con il mezzo targato {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
+<br />
 <p>Futura</p>"""
-            body_interinale = f"""<p>Buongiorno,</br>in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
+            body_interinale = f"""<p>Buongiorno,<br />in allegato la documentazione relativa alla contravvenzione del codice della strada n° {self.description} di competenza della risorsa {self.purchaser_id.name} in quanto al momento della violazione avvenuta in data/ore {self.date} si trovava alla guida del mezzo {self.vehicle_id.license_plate}, tale contravvenzione non comporta la decurtazione di punti.</p>
 <p><b>Vi chiedo di procedere al rilascio della vostra contestazione ed operare la relativa trattenuta dell’importo {importo_formattato}</b> in base a quanto vi verrà quantificato nel Timesheet come di consueto.</p>
 <p>Vi informiamo che è stata inoltrata la contestazione dell’evento da firmare per presa visione alla risorsa all’indirizzo (indirizzo mail dipendente).</p>
 <p>Per eventuali contestazioni vi chiediamo di rispondere sempre a questa mail.</p>
-</br>
+<br />
 <p>Futura</p>"""
 
         # Invia l'email con l'allegato al dipendente
