@@ -3,13 +3,16 @@ from odoo.exceptions import UserError
 import logging, requests, json, xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
 from datetime import datetime
+from odoo.tools import plaintext2html
 
 
 _logger = logging.getLogger(__name__)
 
 
 class DeductionDeduction(models.Model):
-    _inherit = 'deduction.deduction'
+    _inherit = ['deduction.deduction', 'mail.thread', 'mail.activity.mixin']
+    _name = 'deduction.deduction'
+
     
     processed = fields.Boolean()
     processed_by = fields.Many2one('res.users', string='Processed By', help="User who processed the deduction.", default=False)
@@ -178,3 +181,20 @@ class DeductionDeduction(models.Model):
         data = json.loads(result)
         _logger.info(data)
         return payload, data
+
+
+    def set_deduction_not_on_pwork(self):
+        for record in self:
+            # Controllo se la deduzione e` su Pwork
+            if record.on_pwork == True:
+                record.on_pwork = False
+
+                # Scrivo nel chatter che ho appena annullato la deduzione su Pwork (lato Odoo, lato Pwork bisogna farlo manualmente)
+                body_text = f"Rimuovo manualmente la deduzione da Pwork:\n\nPayload:\n{record.payload}\n\nResponse:\n{record.response_txt}"
+                body = plaintext2html(body_text)
+                record.message_post(
+                    body = body,
+                    message_type="comment",
+                                    )
+            else:
+                raise UserError(_(f"La detrazione con id {record.id} non risulta ancora caricata su Pwork, impossibile annullare lo stato."))

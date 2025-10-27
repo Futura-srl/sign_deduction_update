@@ -52,6 +52,10 @@
                         </group>
                     </group>
                 </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -95,6 +99,14 @@
         <field name="binding_model_id" ref="model_deduction_deduction"/>
         <field name="state">code</field>
         <field name="code">records.action_upload_deduction_to_pwork()</field>
+    </record>
+
+    <record id="action_set_deduction_not_on_pwork" model="ir.actions.server">
+        <field name="name">Set not in Pwork</field>
+        <field name="model_id" ref="model_deduction_deduction"/>
+        <field name="binding_model_id" ref="model_deduction_deduction"/>
+        <field name="state">code</field>
+        <field name="code">records.set_deduction_not_on_pwork()</field>
     </record>
 
 
