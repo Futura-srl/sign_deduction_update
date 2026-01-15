@@ -1,13 +1,19 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 import logging, requests, json, xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
 from datetime import datetime
 from odoo.tools import plaintext2html
+from odoo.tools import Markup
 
 
 _logger = logging.getLogger(__name__)
 
+_AUDIT_FIELDS = {
+    'deduction_value': "Addebito",
+    'date': "Data",
+    'employee_id': "Persona",
+}
 
 class DeductionDeduction(models.Model):
     _inherit = ['deduction.deduction', 'mail.thread', 'mail.activity.mixin']
@@ -23,6 +29,7 @@ class DeductionDeduction(models.Model):
     payload = fields.Text(string='Payload', help="The XML payload sent to Pwork.")
     error = fields.Boolean(default=False, help="Indicates if there was an error during processing.")
     is_fleet_rop = fields.Boolean(string="Is Fleet ROP", compute="_compute_is_fleet_rop", help="Indicates if the deduction is related to a fleet ROP service.")
+
 
 
     @api.depends('create_date')
@@ -198,3 +205,161 @@ class DeductionDeduction(models.Model):
                                     )
             else:
                 raise UserError(_(f"La detrazione con id {record.id} non risulta ancora caricata su Pwork, impossibile annullare lo stato."))
+
+    def _log_to_fleet_service(self, action):
+        """
+        action: 'create' | 'write' | 'unlink'
+        """
+        action_map = {
+            'create': _("🟢 Ho creato"),
+            'write': _("🟡 Ho modificato"),
+            'unlink': _("🔴 Ho eliminato"),
+        }
+
+        for record in self:
+            service = record.fleet_vehicle_log_service_id
+            if not service:
+                continue
+
+            message = _(
+                "{action} un addebito di <b>{value}</b><br/>"
+                "per il giorno <b>{date}</b><br/>"
+                "per la persona <b>{employee}</b>"
+            ).format(
+                action=action_map[action],
+                value=record.deduction_value,
+                date=fields.Date.to_string(record.date),
+                employee=record.employee_id.display_name or "-"
+            )
+
+            service.message_post(body=Markup(message))
+
+    def _log_write_changes(self, vals):
+        for record in self:
+            service = record.fleet_vehicle_log_service_id
+            if not service:
+                continue
+
+            changes = []
+
+            for field, label in _AUDIT_FIELDS.items():
+                if field not in vals:
+                    continue
+
+                old_value = record[field]
+                new_value = vals[field]
+
+                field_def = self._fields[field]
+
+                # Formattazione valori
+                if field_def.type == 'many2one':
+                    old = old_value.display_name if old_value else "-"
+                    new = self.env[field_def.comodel_name].browse(new_value).display_name if new_value else "-"
+                elif field_def.type == 'date':
+                    old = fields.Date.to_string(old_value)
+                    new = fields.Date.to_string(new_value)
+                else:
+                    old = old_value
+                    new = new_value
+
+                changes.append(
+                    _("<b>{label}</b>: {old} → {new}").format(
+                        label=label,
+                        old=old,
+                        new=new
+                    )
+                )
+
+            if not changes:
+                continue
+
+            message = _("🟡 Modifica addebito:<br/>") + "<br/>".join(changes)
+            service.message_post(body=Markup(message))
+
+    def _log_write_changes_from_snapshot(self, record, old_values, vals):
+        if not old_values:
+            return
+
+        service = record.fleet_vehicle_log_service_id
+        if not service:
+            return
+
+        changes = []
+
+        for field, label in _AUDIT_FIELDS.items():
+            if field not in vals:
+                continue
+
+            old_value = old_values.get(field)
+            new_value = record[field]  # valore aggiornato
+
+            field_def = self._fields[field]
+
+            if field_def.type == 'many2one':
+                old = old_value.display_name if old_value else "-"
+                new = new_value.display_name if new_value else "-"
+            elif field_def.type == 'date':
+                old = fields.Date.to_string(old_value)
+                new = fields.Date.to_string(new_value)
+            else:
+                old = old_value
+                new = new_value
+
+            if old == new:
+                continue
+
+            changes.append(
+                _("<b>{label}</b>: {old} → {new}").format(
+                    label=label,
+                    old=old,
+                    new=new
+                )
+            )
+
+        if changes:
+            service.message_post(
+                body=Markup(_("🟡 Modifica addebito:<br/>") + "<br/>".join(changes)
+            ))
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+        record._log_to_fleet_service('create')
+        return record
+
+    def write(self, vals):
+        old_values = {}
+
+        for record in self:
+            # Se la deduzione è su Pwork e sto cercando di modificare qualcos'altro
+            if record.on_pwork and (vals.keys() != {'on_pwork'} or vals.get('on_pwork') != False):
+                raise ValidationError(
+                    _("Non puoi modificare un addebito già caricato su Pwork.")
+                )
+
+            # Snapshot solo dei campi che si possono effettivamente modificare
+            old_values[record.id] = {
+                field: record[field]
+                for field in _AUDIT_FIELDS
+                if field in vals
+            }
+
+        res = super().write(vals)
+
+        for record in self:
+            self._log_write_changes_from_snapshot(record, old_values.get(record.id), vals)
+
+        return res
+
+        return res
+
+    # Metto un controllo sull'eliminazione del record, non puo` essere fatta se il record `e gia` stato messo su Pwork
+    def unlink(self):
+        for record in self:
+            if record.on_pwork:
+                raise ValidationError(
+                    _("Non puoi cancellare un addebito già caricato su Pwork.")
+                )
+
+        self._log_to_fleet_service('unlink')
+        return super().unlink()
