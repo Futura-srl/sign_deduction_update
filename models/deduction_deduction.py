@@ -331,11 +331,16 @@ class DeductionDeduction(models.Model):
         old_values = {}
 
         for record in self:
-            # Se la deduzione è su Pwork e sto cercando di modificare qualcos'altro
-            if record.on_pwork and (vals.keys() != {'on_pwork'} or vals.get('on_pwork') != False):
-                raise ValidationError(
-                    _("Non puoi modificare un addebito già caricato su Pwork.")
-                )
+            # Se la deduzione è su Pwork e sto cercando di modificare campi non permessi
+            if record.on_pwork:
+                # Campi permessi anche su record "caricati su Pwork"
+                allowed_fields = {'on_pwork', 'processed', 'processed_by', 'processed_on'}
+
+                # Se vals contiene altri campi, blocca
+                if not set(vals.keys()).issubset(allowed_fields):
+                    raise ValidationError(
+                        _("Non puoi modificare un addebito già caricato su Pwork.")
+                    )
 
             # Snapshot solo dei campi che si possono effettivamente modificare
             old_values[record.id] = {
@@ -351,12 +356,10 @@ class DeductionDeduction(models.Model):
 
         return res
 
-        return res
-
     # Metto un controllo sull'eliminazione del record, non puo` essere fatta se il record `e gia` stato messo su Pwork
     def unlink(self):
         for record in self:
-            if record.on_pwork:
+            if record.on_pwork or record.processed:
                 raise ValidationError(
                     _("Non puoi cancellare un addebito già caricato su Pwork.")
                 )
