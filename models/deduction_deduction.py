@@ -221,6 +221,10 @@ class DeductionDeduction(models.Model):
             if not service:
                 continue
 
+            user_tz_datetime = fields.Datetime.context_timestamp(record, record.date)
+            date_str = fields.Date.to_string(user_tz_datetime.date())
+
+
             message = _(
                 "{action} un addebito di <b>{value}</b><br/>"
                 "per il giorno <b>{date}</b><br/>"
@@ -228,7 +232,7 @@ class DeductionDeduction(models.Model):
             ).format(
                 action=action_map[action],
                 value=record.deduction_value,
-                date=fields.Date.to_string(record.date),
+                date=date_str,
                 employee=record.employee_id.display_name or "-"
             )
 
@@ -253,12 +257,39 @@ class DeductionDeduction(models.Model):
 
                 # Formattazione valori
                 if field_def.type == 'many2one':
+                    _logger.info("Tipo many2one")
                     old = old_value.display_name if old_value else "-"
                     new = self.env[field_def.comodel_name].browse(new_value).display_name if new_value else "-"
                 elif field_def.type == 'date':
+                    _logger.info("Tipo data")
                     old = fields.Date.to_string(old_value)
                     new = fields.Date.to_string(new_value)
+                elif field_def.type == 'datetime':
+                    _logger.info("Tipo datatime")
+
+                    # Funzione helper: UTC -> timezone utente -> solo giorno
+                    def utc_to_user_day(dt):
+                        if not dt:
+                            return None
+                        # Converte UTC -> timezone utente
+                        local_dt = fields.Datetime.context_timestamp(record, dt)
+                        # Prende solo il giorno
+                        return local_dt.date()
+
+                    # Vecchio valore
+                    old_date = utc_to_user_day(record[field])
+                    # Nuovo valore (da vals) → attenzione può essere str
+                    new_val = vals[field]
+                    if isinstance(new_val, str):
+                        new_val = fields.Datetime.from_string(new_val)
+                    new_date = utc_to_user_day(new_val)
+
+                    # Converto in stringa YYYY-MM-DD
+                    old = fields.Date.to_string(old_date) if old_date else "-"
+                    new = fields.Date.to_string(new_date) if new_date else "-"
+                    _logger.info(f"Old datetime: {old_value} -> {old}, New datetime: {new_value} -> {new}")
                 else:
+                    _logger.info("Tipo resto")
                     old = old_value
                     new = new_value
 
@@ -292,18 +323,36 @@ class DeductionDeduction(models.Model):
 
             old_value = old_values.get(field)
             new_value = record[field]  # valore aggiornato
-
             field_def = self._fields[field]
 
             if field_def.type == 'many2one':
                 old = old_value.display_name if old_value else "-"
                 new = new_value.display_name if new_value else "-"
             elif field_def.type == 'date':
-                old = fields.Date.to_string(old_value)
-                new = fields.Date.to_string(new_value)
+                old = fields.Date.to_string(old_value) if old_value else "-"
+                new = fields.Date.to_string(new_value) if new_value else "-"
+            elif field_def.type == 'datetime':
+                # Funzione helper: UTC -> timezone utente -> solo giorno
+                def utc_to_user_day(dt):
+                    if not dt:
+                        return None
+                    local_dt = fields.Datetime.context_timestamp(record, dt)
+                    return local_dt.date()
+
+                # old_value potrebbe essere str o datetime
+                if isinstance(old_value, str):
+                    old_value = fields.Datetime.from_string(old_value)
+                if isinstance(new_value, str):
+                    new_value = fields.Datetime.from_string(new_value)
+
+                old_date = utc_to_user_day(old_value)
+                new_date = utc_to_user_day(new_value)
+
+                old = fields.Date.to_string(old_date) if old_date else "-"
+                new = fields.Date.to_string(new_date) if new_date else "-"
             else:
-                old = old_value
-                new = new_value
+                old = old_value if old_value is not None else "-"
+                new = new_value if new_value is not None else "-"
 
             if old == new:
                 continue
@@ -318,8 +367,8 @@ class DeductionDeduction(models.Model):
 
         if changes:
             service.message_post(
-                body=Markup(_("🟡 Modifica addebito:<br/>") + "<br/>".join(changes)
-            ))
+                body=Markup(_("🟡 Modifica addebito:<br/>") + "<br/>".join(changes))
+            )
 
     @api.model
     def create(self, vals):
