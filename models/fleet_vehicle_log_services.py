@@ -94,11 +94,11 @@ class FleetVehicleLogServices(models.Model):
     def _compute_employee_interinale(self):
         for record in self:
             # Trovo tutti i dipendenti associati al partner
-            employees = self.env['hr.employee'].search(
+            employees = self.env['hr.employee'].sudo().search(
                 [('address_home_id', '=', record.purchaser_id.id), ('active', '=', True)])
             for employee in employees:
                 # Controllo se il dipendente oggi ha un contratto attivo
-                active_contract = self.env['hr.contract'].search(
+                active_contract = self.env['hr.contract'].sudo().search(
                     [('employee_id', '=', employee.id), ('date_start', '<=', date_today), '|',
                      ('date_end', '>=', date_today), ('date_end', '=', False)])
                 if active_contract:
@@ -151,10 +151,10 @@ class FleetVehicleLogServices(models.Model):
         for deduction_id in deduction_ids:
             _logger.info("Stampo singolo record")
             _logger.info(str(deduction_id))
-            _logger.info(self.env['deduction.deduction'].search(
-                [('id', '=', deduction_id), ('date', '!=', False)]).deduction_value)
+            _logger.info(self.env['deduction.deduction'].sudo().search(
+                [('id', '=', deduction_id), ('date', '!=', False)]).sudo().deduction_value)
             total_import += self.env['deduction.deduction'].search(
-                [('id', '=', deduction_id), ('date', '!=', False)]).deduction_value
+                [('id', '=', deduction_id), ('date', '!=', False)]).sudo().deduction_value
         _logger.info("importo totale %s", total_import)
         importo_formattato = "{:.2f}".format(total_import).replace(".", ",")
         _logger.info("STAMPO I VALORI")
@@ -313,7 +313,7 @@ class FleetVehicleLogServices(models.Model):
             mail_rop += rop_id['email'] + "; "
         _logger.info(mail_rop)
         # Controllo se è interinale
-        is_interinal = self.env['hr.employee'].search_read(
+        is_interinal = self.env['hr.employee'].sudo().search_read(
             [('address_home_id', '=', self.purchaser_id.id), ('active', '=', True)])
         email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0][
             'email_personale']
@@ -398,7 +398,7 @@ class FleetVehicleLogServices(models.Model):
         mail = self.env['mail.mail'].sudo().create(mail_rop_values)
         mail.send()
 
-        partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
+        partner_id = self.env['res.users'].sudo().browse(self.env.uid).partner_id.id
         self.env['mail.message'].create(
             {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
              'message_type': 'comment',
@@ -487,10 +487,10 @@ class FleetVehicleLogServices(models.Model):
         if email == False:
             raise ValidationError(_("Il res.partner non ha una mail personale inserita."))
         # Controllo se il res.partner ha dipendenti collegati con contratti attivi
-        contract_active = self.env['hr.employee'].search_read([('address_home_id', '=', self.purchaser_id.id)])
+        contract_active = self.env['hr.employee'].sudo().search_read([('address_home_id', '=', self.purchaser_id.id)])
         if contract_active:
             _logger.info(contract_active[0]['contract_id'][0])
-            contract = self.env['hr.contract'].search([('id', '=', contract_active[0]['contract_id'][0])])
+            contract = self.env['hr.contract'].sudo().search([('id', '=', contract_active[0]['contract_id'][0])])
             _logger.info(contract.state)
             if contract.state != 'open':
                 raise ValidationError(_("L'autista non ha alcun contratto attivo."))
@@ -514,7 +514,7 @@ class FleetVehicleLogServices(models.Model):
         for employee in employees:
             for contract_id in employee['contract_ids']:
                 _logger.info(contract_id)
-                contract = self.env['hr.contract'].search_read([('id', '=', contract_id)])
+                contract = self.env['hr.contract'].sudo().search_read([('id', '=', contract_id)])
                 _logger.info(contract[0]['state'])
                 # Controllo se il contratto è attivo
                 if contract[0]['state'] == 'open':
@@ -526,10 +526,10 @@ class FleetVehicleLogServices(models.Model):
                     else:
                         _logger.info(f"Il dipendente è assunto tramite azienda interinale {employee['interinale']}")
                         # Trovo i contatti della sede
-                        interinale = self.env['hr.interinale'].search_read([('id', '=', employee['interinale'][0])])
+                        interinale = self.env['hr.interinale'].sudo().search_read([('id', '=', employee['interinale'][0])])
                         _logger.info("SONO QUIIIIIIIII")
                         _logger.info(interinale[0]['res_partner_id'][1])
-                        test = self.env['hr.interinale.contatti'].search_read()
+                        test = self.env['hr.interinale.contatti'].sudo().search_read()
                         for record in test:
                             _logger.info(record)
                             a = self.env['res.partner'].search([('id', '=', record['res_partner_id'][0]),
@@ -555,7 +555,7 @@ class FleetVehicleLogServices(models.Model):
             _logger.info(employee)
             for contract_id in employee['contract_ids']:
                 _logger.info(contract_id)
-                contract = self.env['hr.contract'].search_read([('id', '=', contract_id)])
+                contract = self.env['hr.contract'].sudo().search_read([('id', '=', contract_id)])
                 start_contract = contract[0]['date_start']
                 end_contract = contract[0]['date_end']
                 _logger.info(contract)
@@ -574,10 +574,10 @@ class FleetVehicleLogServices(models.Model):
                     else:
                         _logger.info(f"Il dipendente è assunto tramite azienda interinale {employee['interinale']}")
                         # Trovo i contatti della sede
-                        interinale = self.env['hr.interinale'].search_read([('id', '=', employee['interinale'][0])])
+                        interinale = self.env['hr.interinale'].sudo().search_read([('id', '=', employee['interinale'][0])])
                         _logger.info("SONO QUIIIIIIIII")
                         _logger.info(interinale[0]['res_partner_id'][1])
-                        test = self.env['hr.interinale.contatti'].search_read()
+                        test = self.env['hr.interinale.contatti'].sudo().search_read()
                         for record in test:
                             _logger.info(record)
                             a = self.env['res.partner'].search([('id', '=', record['res_partner_id'][0]),
@@ -628,7 +628,7 @@ class FleetVehicleLogServices(models.Model):
         if vals_list[0]['service_type_id'] == 9:
             _logger.info("DEVO CREARE UN REMINDER")
             for user in helpdesk_id[0]['message_partner_ids']:
-                user_id = self.env['res.users'].search_read([('partner_id', '=', user)], ['id'])
+                user_id = self.env['res.users'].sudo().search_read([('partner_id', '=', user)], ['id'])
                 _logger.info(user_id[0]['id'])
                 alert = self.env['mail.activity'].create({
                     'res_name': 'Completamento sinistro ' + str(res['id']),
