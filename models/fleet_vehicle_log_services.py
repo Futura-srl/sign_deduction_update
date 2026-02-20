@@ -299,13 +299,13 @@ class FleetVehicleLogServices(models.Model):
 
     def send_attachment_with_email(self, attachment_id, attachment_for_rop_id=""):
         # Recupero i rop che dovranno ricevere anche loro la mail
-        organization_id = self.env['gtms.trip'].search_read([('id', '=', self.trip_id.id)], ['organization_id'])
+        organization_id = self.env['gtms.trip'].sudo().search_read([('id', '=', self.trip_id.id)], ['organization_id'])
         _logger.info(organization_id[0]['organization_id'][0])
-        rop_ids = self.env['helpdesk.team'].search_read(
+        rop_ids = self.env['helpdesk.team'].sudo().search_read(
             [('organization_id', '=', organization_id[0]['organization_id'][0])], ['message_partner_ids'])
         _logger.info(rop_ids[0])
         mail_rop = ""
-        rop_ids = self.env['res.partner'].search([('id', 'in', rop_ids[0]['message_partner_ids'])])
+        rop_ids = self.env['res.partner'].sudo().search([('id', 'in', rop_ids[0]['message_partner_ids'])])
         # mail += self.env['res.partner'].search([('id', '=', rop_ids['message_partner_ids'])])
         for rop_id in rop_ids:
             _logger.info(f"Stampo ROP_ID {rop_id.email}")
@@ -315,7 +315,7 @@ class FleetVehicleLogServices(models.Model):
         # Controllo se è interinale
         is_interinal = self.env['hr.employee'].sudo().search_read(
             [('address_home_id', '=', self.purchaser_id.id), ('active', '=', True)])
-        email = self.env['res.partner'].search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0][
+        email = self.env['res.partner'].sudo().search_read([('id', '=', self.purchaser_id.id)], ['email_personale'])[0][
             'email_personale']
         _logger.info(f"La mail va inviata a {email}")
 
@@ -427,7 +427,7 @@ class FleetVehicleLogServices(models.Model):
             mail = self.env['mail.mail'].sudo().create(mail_values)
             mail.send()
             partner_id = self.env['res.users'].browse(self.env.uid).partner_id.id
-            self.env['mail.message'].create(
+            self.env['mail.message'].sudo().create(
                 {'model': 'fleet.vehicle.log.services', 'res_id': self.id, 'author_id': partner_id,
                  'body': "<p>Ho appena inviato la seguente mail all'interinale:</p><p>Copia del verbale</p>"})
 
