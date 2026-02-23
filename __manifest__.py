@@ -1,6 +1,6 @@
 {
     'name': 'sign deduction update',
-    'version': '17.3',
+    'version': '17.4',
     'author': "Luca Cocozza",
     'application': True,
     'description': "Modulo per generare il documento relativo al danno / multa da far firmare al dipendente.",
