@@ -383,7 +383,7 @@ class DeductionDeduction(models.Model):
             # Se la deduzione è su Pwork e sto cercando di modificare campi non permessi
             if record.on_pwork:
                 # Campi permessi anche su record "caricati su Pwork"
-                allowed_fields = {'on_pwork', 'processed', 'processed_by', 'processed_on'}
+                allowed_fields = {'on_pwork', 'processed', 'processed_by', 'processed_on', 'error', 'response_txt'}
 
                 # Se vals contiene altri campi, blocca
                 if not set(vals.keys()).issubset(allowed_fields):
