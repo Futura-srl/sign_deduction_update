@@ -111,7 +111,7 @@ class DeductionDeduction(models.Model):
         if not employees:
             raise UserError(_("No employees found for this partner."))
         for employee in employees:
-            contract = self.env['hr.contract'].search([('employee_id', '=', employee.id), ('date_start', '<=', date), '|', ('date_end', '>=', date), ('date_end', '=', False)])
+            contract = self.env['hr.contract'].search([('employee_id', '=', employee.id), ('date_start', '<=', date), '|', ('date_end', '>=', date), ('date_end', '=', False), ('state', '!=', 'cancel')])
             if contract:
                 # Se ho trovato un contratto salvo l'id del dipendente ed esco dal ciclo e procedo con la chiamata
                 employee_id = employee.id
@@ -123,8 +123,8 @@ class DeductionDeduction(models.Model):
 
         # Recupero i dati per la chiamata
         employee = self.env['hr.employee'].browse(employee_id)
-        pwork_azienda_id = employee.pwork_azienda_id
-        pwork_dipendente_id = employee.pwork_dipendente_id
+        pwork_azienda_id = contract.pwork_azienda_id
+        pwork_dipendente_id = contract.pwork_dipendente_id
         # trasformo la data in formato dd/mm/yyyy e metto la timezone di Roma
         date = (date.astimezone(rome_tz)).strftime("%d/%m/%Y")
         # Recupero il tipo di voce
