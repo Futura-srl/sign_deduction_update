@@ -13,6 +13,7 @@
         'view/helpdesk_team_view.xml',
         'view/fleet_vehicle_renter_view.xml',
         'view/deduction_deduction.xml',
+        'view/violation_violation_view.xml',
         'wizard/fleet_vehicle_log_services_charged_wizard.xml',
     ],
     'external_dependencies': {

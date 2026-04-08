@@ -46,6 +46,11 @@ class FleetVehicleLogServices(models.Model):
     email_interinalle = fields.Boolean(string="Email Interinale",
                                        help="Check if the employee is an interinale and has an email.")
 
+    is_ztl_present = fields.Boolean(compute='_compute_is_ztl', store=False)
+    all_active_ztl = fields.Many2many('fleet.vehicle.log.contract')
+
+
+
     @api.model_create_multi
     def create(self, vals_list):
         res = super(FleetVehicleLogServices, self).create(vals_list)
@@ -111,6 +116,54 @@ class FleetVehicleLogServices(models.Model):
     #     MULTE        #
     ####################
     ####################
+
+
+    # Avviso chi inserisce la multa se la multa è di tipologia is_ztl e il mezzo ha contratti ztl attivi in quel periodo
+    @api.depends('violation_ids', 'date')
+    def _compute_is_ztl(self):
+        all_ztl_type = self.env['fleet.service.type'].sudo().search([('is_ztl', '=', True)])
+        active_ztl = []
+        for record in self:
+            is_ztl = False
+            for violation in record.violation_ids:
+                if violation.is_ztl:
+                    # _logger.info("Ho trovato una violazione con ZTL")
+                    # Controllo se il mezzo aveva coperture ZTL attive in quel giorno
+                    active_ztl_contracts = self.env['fleet.vehicle.log.contract'].sudo().search(
+                        [('vehicle_id', '=', record.vehicle_id.id),
+                         ('cost_subtype_id', 'in', all_ztl_type.ids),
+                         ('start_date', '<=', record.date.date()),
+                         '|',
+                         ('expiration_date', '>=', record.date.date()),
+                         ('expiration_date', '=', False)]
+                    )
+                    if active_ztl_contracts:
+                        # _logger.info("Ho trovato un contratto ZTL attivo per il mezzo in quel giorno")
+                        # _logger.info(active_ztl_contracts)
+                        is_ztl = True
+                        active_ztl = active_ztl_contracts.ids
+                        break
+            record.is_ztl_present = is_ztl
+            record.all_active_ztl = [(6, 0, active_ztl)]
+
+
+    @api.onchange('violation_ids', 'is_ztl_present')
+    def _onchange_violation_ids(self):
+        if self.is_ztl_present:
+
+            # _logger.info(f"Stampo tutti le ztl trovate attive in quel giorno")
+            # _logger.info(self.all_active_ztl)
+            messages = ""
+            for ztl in self.all_active_ztl:
+                # _logger.info(f"Stampo singolo contratto ztl")
+                # _logger.info(" - " + ztl.cost_subtype_id.name + " dal " + str(ztl.start_date) + " al " + str(ztl.expiration_date))
+                messages += " - " + ztl.cost_subtype_id.name + " dal " + str(ztl.start_date) + " al " + str(ztl.expiration_date) + "\n"
+            return {
+                'warning': {
+                    'title': 'Attenzione',
+                    'message': f"Vi erano delle ZTL attive sul mezzo al momento dell'infrazione:\n{messages}"
+                }
+            }
 
     def confirm_signed_document(self):
         for record in self:

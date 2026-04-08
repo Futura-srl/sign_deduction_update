@@ -14,6 +14,7 @@
                 <field name="service_type_id" invisible="1"/>
                 <field name="signed_document" invisible="1"/>
                 <field name="to_be_charged" invisible="1"/>
+                <field name="is_ztl_present" invisible="1"/>
             </xpath>
             <xpath expr="//button[@name='send_mail_to_driver']" position="attributes">
                 <attribute name="invisible">1</attribute>

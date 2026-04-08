@@ -1,0 +1,29 @@
+<odoo>
+    <record model="ir.ui.view" id="view_violation_violation_form">
+        <field name="name">violation.violation.form</field>
+        <field name="model">violation.violation</field>
+        <field name="arch" type="xml">
+            <form string="Violation">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="is_ztl"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_violation_violation_tree">
+        <field name="name">violation.violation.tree</field>
+        <field name="model">violation.violation</field>
+        <field name="arch" type="xml">
+            <tree string="Violations">
+                <field name="name"/>
+                <field name="is_ztl"/>
+            </tree>
+        </field>
+    </record>
+
+
+</odoo>
