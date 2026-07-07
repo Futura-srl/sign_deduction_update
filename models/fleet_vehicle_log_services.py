@@ -38,8 +38,8 @@ class FleetVehicleLogServices(models.Model):
     to_be_charged = fields.Selection([('yes', 'Yes'), ('no', 'No')], string='To be charged?', default=False,
                                      tracking=True,
                                      help="Select if the service is to be charged to the customer or not.")
-    motivation_of_charge = fields.Text(string='Motivation of charge',
-                                       help="Insert the motivation of the charge if the service is to be charged or not to the driver.",
+    motivation_of_charge = fields.Text(string='Motivation of not charge',
+                                       help="Please specify the reason why it should not be charged.",
                                        tracking=True)
     employee_interinale = fields.Boolean(string="Employee Interinale", compute="_compute_employee_interinale",
                                          store=True, help="Check if the employee is an interinale.")

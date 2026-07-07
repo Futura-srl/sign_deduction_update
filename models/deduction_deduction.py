@@ -206,9 +206,11 @@ class DeductionDeduction(models.Model):
             else:
                 raise UserError(_(f"La detrazione con id {record.id} non risulta ancora caricata su Pwork, impossibile annullare lo stato."))
 
-    def _log_to_fleet_service(self, action):
+    def _log_to_fleet_service(self, action, service_override=None):
         """
         action: 'create' | 'write' | 'unlink'
+        service_override: dict opzionale {record.id: anomalia} per loggare su una
+        specifica anomalia (es. quella di origine di un addebito appena staccato).
         """
         action_map = {
             'create': _("🟢 Ho creato"),
@@ -217,7 +219,10 @@ class DeductionDeduction(models.Model):
         }
 
         for record in self:
-            service = record.fleet_vehicle_log_service_id
+            if service_override and record.id in service_override:
+                service = service_override[record.id]
+            else:
+                service = record.fleet_vehicle_log_service_id
             if not service:
                 continue
 
@@ -398,10 +403,25 @@ class DeductionDeduction(models.Model):
                 if field in vals
             }
 
+        # Rileva gli addebiti che vengono staccati da un'anomalia (fleet_vehicle_log_service_id -> vuoto).
+        # In tal caso l'addebito non deve restare orfano: va cancellato, scrivendo l'eliminazione
+        # nel chatter dell'anomalia di origine (come per le altre operazioni).
+        detached_services = {}
+        if 'fleet_vehicle_log_service_id' in vals and not vals['fleet_vehicle_log_service_id']:
+            for record in self:
+                if record.fleet_vehicle_log_service_id:
+                    detached_services[record.id] = record.fleet_vehicle_log_service_id
+
         res = super().write(vals)
 
         for record in self:
             self._log_write_changes_from_snapshot(record, old_values.get(record.id), vals)
+
+        if detached_services:
+            to_delete = self.browse(list(detached_services))
+            # Log dell'eliminazione sull'anomalia di origine (ormai già staccata), poi cancella l'addebito
+            to_delete._log_to_fleet_service('unlink', service_override=detached_services)
+            to_delete.unlink()
 
         return res
 
