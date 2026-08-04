@@ -18,10 +18,10 @@
         <field name="name">violation.violation.tree</field>
         <field name="model">violation.violation</field>
         <field name="arch" type="xml">
-            <tree string="Violations">
+            <list string="Violations">
                 <field name="name"/>
                 <field name="is_ztl"/>
-            </tree>
+            </list>
         </field>
     </record>
 

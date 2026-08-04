@@ -180,7 +180,7 @@ class FleetVehicleLogServices(models.Model):
             'name': 'Documenti con firma richiesta',
             'type': 'ir.actions.act_window',
             'res_model': 'sign.request',
-            'view_mode': 'kanban,tree,form',
+            'view_mode': 'kanban,list,form',
             'domain': [('anomaly_id', '=', self.id)],
             'target': 'current',
         }

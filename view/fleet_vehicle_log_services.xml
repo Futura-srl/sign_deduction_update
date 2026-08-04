@@ -73,7 +73,7 @@
             </xpath>
             <xpath expr="//field[@name='deduction_ids']" position="replace">
                 <field name="deduction_ids" context="{'default_fleet_vehicle_log_service_id': id}" nolabel="1">
-                    <tree editable="bottom">
+                    <list editable="bottom">
                         <field name="date" widget="date"/>
                         <field name="employee_id" optional="show"/>
                         <field name="deduction_value" sum="Total of deductions" optional="show"/>
@@ -82,7 +82,7 @@
                         <field name="processed" optional="show" readonly="1"/> <!-- Forse mostrare solo per le multe-->
                         <field name="processed_by" optional="hide" readonly="1"/>
                         <field name="processed_on" optional="hide" readonly="1"/>
-                    </tree>
+                    </list>
                 </field>
             </xpath>
             <xpath expr="//field[@name='notes']" position="attributes">
@@ -137,14 +137,14 @@
             <xpath expr="//notebook" position="inside">
                 <page name="email" string="Email">
                     <field name="email_ids" readonly="True" domain="[('model','=', 'fleet.vehicle.log.services'), ('res_id', '=', id)]">
-                        <tree>
+                        <list>
                             <field name="date"/>
                             <field name="subject"/>
                             <field name="email_to"/>
                             <field name="author_id"/>
                             <field name="state" widget="badge"/>
                             <!-- <button name="open_rel_documents" type="object" icon="fa-file" context="{'document_id': id, 'log_service_id': service_id}"/> -->
-                        </tree>
+                        </list>
                     </field>
                 </page>
             </xpath>
